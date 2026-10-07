@@ -268,6 +268,31 @@
                 </ul>
             </section>
 
+            {{-- Legal ways to pay less --}}
+            <section class="sec" aria-labelledby="h-tips" x-show="report.tips && report.tips.length">
+                <div class="sec-head">
+                    <div>
+                        <h2 id="h-tips">{{ __('Pay less tax, legally') }}</h2>
+                        <p>{{ __('Choices the law gives you, checked against your numbers. Savings are for this year.') }}</p>
+                    </div>
+                    <a href="{{ route('tips') }}" class="btn btn-ghost btn-sm">{{ __('All ways to save') }}</a>
+                </div>
+                <div class="tips">
+                    <template x-for="(tip, i) in report.tips" :key="tip.id">
+                        <article class="tip reveal" :class="'kind-' + tip.kind" :style="'--i:' + Math.min(i, 8)">
+                            <header>
+                                <span class="tip-icon" x-html="icon(tip.icon)"></span>
+                                <span class="tip-kind" x-text="kindLabel(tip.kind)"></span>
+                                <span class="tip-saving" x-show="tip.saving" x-text="KH.t(':amount less', { amount: bdt(tip.saving) })"></span>
+                            </header>
+                            <h3 x-text="tip.title"></h3>
+                            <p x-text="tip.about"></p>
+                            <small x-text="tip.law"></small>
+                        </article>
+                    </template>
+                </div>
+            </section>
+
             {{-- Scenarios --}}
             <section class="sec" aria-labelledby="h-raise">
                 <div class="sec-head">

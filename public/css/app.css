@@ -580,6 +580,21 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .print-only { display: none; }
+.tips { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tip {
+    display: grid; align-content: start; gap: 8px; padding: 18px; border-radius: var(--r-lg); background: var(--surface);
+    border: 1px solid var(--line); transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.tip:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: var(--shadow-panel); }
+.tip header { display: flex; align-items: center; gap: 8px; }
+.tip-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); flex: none; }
+.tip-kind { font-size: var(--t-xs); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.tip-saving { margin-left: auto; font-size: var(--t-xs); font-weight: 700; color: var(--green); background: var(--mint); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.tip h3 { font-size: var(--t-md); font-weight: 650; line-height: 1.35; }
+.tip p { font-size: var(--t-sm); color: var(--ink-2); }
+.tip small { font-size: var(--t-xs); color: var(--muted); }
+.tip.kind-invest .tip-icon, .tip.kind-claim .tip-icon { background: var(--mint); color: var(--green); }
+.tip.kind-file .tip-icon { background: var(--turmeric-soft); color: var(--ink); }
 .outcomes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
 .outcome { display: grid; gap: 4px; padding: 18px 20px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); }
 .outcome span { color: var(--muted); font-size: var(--t-sm); }

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Tax\TaxEngine;
 use App\Services\Tax\TaxReport;
+use App\Services\Tax\TaxTips;
 use App\Services\Tax\TdsPlanner;
 use App\Services\Wealth\WealthReconciler;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TdsPlanner::class, fn ($app) => new TdsPlanner(
             $app->make(TaxEngine::class), $app->make(TaxReport::class), array_keys($app['config']->get('salary.perks')),
         ));
+        $this->app->bind(TaxTips::class, fn ($app) => new TaxTips($app->make(TaxEngine::class), $app['config']->get('tips')));
         $this->app->singleton(WealthReconciler::class, fn ($app) => new WealthReconciler($app['config']->get('wealth')));
 
         // SQLite: write-ahead logging lets reads continue during writes; wait instead of failing when busy.

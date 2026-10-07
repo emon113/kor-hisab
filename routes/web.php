@@ -10,6 +10,7 @@ use App\Http\Controllers\OfferCompareController;
 use App\Http\Controllers\ReturnGuideController;
 use App\Http\Controllers\TargetTaxController;
 use App\Http\Controllers\TdsPlannerController;
+use App\Http\Controllers\TipsController;
 use App\Http\Controllers\WealthController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::post('/target-tax/solve', [TargetTaxController::class, 'solve'])->middlew
 Route::get('/return-guide', [ReturnGuideController::class, 'show'])->middleware('throttle:240,1')->name('return-guide');
 Route::get('/tds-planner', [TdsPlannerController::class, 'index'])->name('tds');
 Route::get('/must-i-file', [FilingCheckController::class, 'index'])->name('filing-check');
+Route::get('/save-tax', [TipsController::class, 'index'])->name('tips');
 Route::get('/compare-offers', [OfferCompareController::class, 'index'])->name('offers');
 Route::post('/compare-offers/compute', [OfferCompareController::class, 'compute'])->middleware('throttle:240,1')->name('offers.compute');
 Route::post('/tds-planner/plan', [TdsPlannerController::class, 'plan'])->middleware('throttle:240,1')->name('tds.plan');

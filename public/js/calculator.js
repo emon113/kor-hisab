@@ -214,6 +214,9 @@ document.addEventListener('alpine:init', () => {
             Object.entries(f.investments || {}).forEach(([k, v]) => { if (Number(v)) params.set('investments[' + k + ']', v); });
             return this.routes.guide + '?' + params.toString();
         },
+        kindLabel(kind) {
+            return { invest: KH.t('Invest'), claim: KH.t('Claim'), file: KH.t('File'), check: KH.t('Check'), know: KH.t('Good to know') }[kind] || '';
+        },
         raiseLabel(raise) {
             return raise === 0 ? KH.t('Today') : '+' + KH.num(Math.round(raise * 100)) + '%';
         },

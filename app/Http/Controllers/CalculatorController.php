@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CalculationInputRequest;
 use App\Models\Calculation;
 use App\Services\Tax\TaxReport;
+use App\Services\Tax\TaxTips;
 use App\Support\Money;
 use App\Support\TaxOptions;
 use App\Support\TaxProfile;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 
 class CalculatorController extends Controller
 {
-    public function __construct(private readonly TaxReport $reports) {}
+    public function __construct(private readonly TaxReport $reports, private readonly TaxTips $tips) {}
 
     /** The calculator, starting from a sensible example (or the browser's saved draft). */
     public function index(Request $request): View
@@ -34,7 +35,16 @@ class CalculatorController extends Controller
     {
         Money::useGrouping($request->input('grouping'));
 
-        return response()->json($this->reports->build($request->taxInput()));
+        return response()->json($this->report($request->taxInput()));
+    }
+
+    /** The tax report plus the legal ways to lower it. */
+    private function report(array $input): array
+    {
+        $report = $this->reports->build($input);
+        $report['tips'] = $this->tips->for($report);
+
+        return $report;
     }
 
     private function page(Request $request, ?Calculation $calculation): View
@@ -56,7 +66,7 @@ class CalculatorController extends Controller
             'boot' => [
                 'auth' => $request->user() !== null,
                 'fresh' => $request->boolean('new'),
-                'report' => $this->reports->build($input),
+                'report' => $this->report($input),
                 'calculation' => $calculation ? [
                     'id' => $calculation->id,
                     'title' => $calculation->title,

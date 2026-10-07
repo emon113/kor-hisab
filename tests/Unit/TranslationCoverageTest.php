@@ -15,7 +15,7 @@ class TranslationCoverageTest extends TestCase
     private const SCAN = ['app', 'resources/views', 'public/js', 'routes'];
 
     /** Config files whose user-facing labels are translated where they are shown. */
-    private const LABEL_KEYS = ['label', 'hint', 'income_year', 'question', 'reason', 'service', 'text', 'title', 'note', 'intro'];
+    private const LABEL_KEYS = ['label', 'hint', 'income_year', 'question', 'reason', 'service', 'text', 'title', 'note', 'intro', 'about', 'headline', 'law'];
 
     private string $root;
 
@@ -114,7 +114,7 @@ class TranslationCoverageTest extends TestCase
     {
         $tax = require $this->root.'/config/tax.php';
         $configs = [['years' => $tax['years'], 'instruments' => $tax['instruments'], 'filing' => $tax['filing_periods'], 'salary' => $tax['salary_components']]];
-        foreach (['return_form', 'wealth', 'filing_check', 'salary'] as $name) {
+        foreach (['return_form', 'wealth', 'filing_check', 'salary', 'tips'] as $name) {
             $path = $this->root."/config/{$name}.php";
             if (is_file($path)) {
                 $configs[] = require $path;

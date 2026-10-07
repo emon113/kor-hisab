@@ -76,6 +76,22 @@ Anyone can use the calculators without an account. With an account, you can save
 - **The check:** the form derives this year's net wealth from last year's plus sources of fund minus expenses, and it must equal assets minus liabilities. The page shows any gap live (more wealth than income explains, or less than it should be), the kind of mismatch that prompts NBR questions. Small gaps (the larger of ৳10,000 and 1% of sources) count as rounding.
 - Print view in IT-10B order. Logic in `app/Services/Wealth/WealthReconciler.php`, lines in `config/wealth.php`.
 
+### Pay less tax, legally (`/save-tax`, and in every calculation)
+- Seventeen legal choices from the Income Tax Act 2023 and Finance Act 2026, each with its legal reference, for example:
+  - reaching the full investment rebate
+  - claiming provident fund contributions, life insurance, Universal Pension, zakat and approved donations
+  - filing between July and September, and not filing late
+  - the lower minimum tax on a first return
+  - checking the taxpayer category and the disabled-dependent allowance
+  - separate limits for spouses
+  - why the basic/allowance split doesn't matter
+  - avoiding over-investment
+  - declaring investments to HR
+  - claiming refunds
+- **Personalised:** the calculator shows the tips that apply to the numbers on screen, with the saving each brings, largest first. "What if" savings (another category, a disabled dependent, a first return, early filing) come from `TaxEngine`.
+- The catalogue page lists them all. Signed-in users with a salary profile also get a "For you" section.
+- Words live in `config/tips.php`, rules in `app/Services/Tax/TaxTips.php`.
+
 ### Accounts (optional)
 - Register, sign in and sign out. Passwords need 8 or more characters with letters and numbers. Sign-in is rate-limited.
 - **Saved calculations** (`/calculations`): a list with stats and a trend chart. You can open, rename or edit notes, delete, and **compare two side by side**.
@@ -190,6 +206,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET | `/return-guide` | – | Return form guide (calculator inputs in the query string) |
 | GET | `/tds-planner` | – | Monthly TDS planner |
 | GET | `/must-i-file` | – | Return filing checker |
+| GET | `/save-tax` | – | Legal ways to pay less tax |
 | GET | `/compare-offers` | – | Job offer comparer |
 | POST | `/compare-offers/compute` | – | JSON comparison (throttle 240/min) |
 | POST | `/tds-planner/plan` | – | JSON plan (throttle 240/min) |
