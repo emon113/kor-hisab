@@ -602,6 +602,7 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .tds-table tr.is-done td:first-child { color: var(--muted); }
 .tds-check { width: 18px; height: 18px; accent-color: var(--green); }
 .wealth-item { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; }
+.calc-title .pill { display: inline-block; }
 .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: var(--t-xs); font-weight: 600; background: var(--surface-2); margin-top: 4px; }
 .pill.tone-good { background: var(--mint); }
 .pill.tone-cost { background: var(--red-soft); }
