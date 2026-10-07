@@ -267,6 +267,13 @@
         applyChartDefaults();
         initToggles();
         if (window.__flash) KH.toast(window.__flash);
+        // Print in the light theme whatever the screen uses, then switch back.
+        let screenTheme = null;
+        window.addEventListener('beforeprint', () => {
+            screenTheme = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', 'light');
+        });
+        window.addEventListener('afterprint', () => { if (screenTheme) document.documentElement.setAttribute('data-theme', screenTheme); });
         // Close the account menu when clicking elsewhere.
         document.addEventListener('click', (e) => {
             document.querySelectorAll('details.menu[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); });

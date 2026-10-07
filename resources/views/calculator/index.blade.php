@@ -157,6 +157,10 @@
                 </div>
             </dl>
 
+            <div class="result-links">
+                <a :href="guideUrl" class="btn btn-ghost btn-sm"><x-icon name="guide" size="16" /> {{ __('Where to enter this on the return') }}</a>
+            </div>
+
             {{-- Slabs --}}
             <section class="sec" aria-labelledby="h-slabs">
                 <div class="sec-head">

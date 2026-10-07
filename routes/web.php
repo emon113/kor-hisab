@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalculationController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\LangController;
+use App\Http\Controllers\ReturnGuideController;
 use App\Http\Controllers\TargetTaxController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,7 @@ Route::get('/', [CalculatorController::class, 'index'])->name('home');
 Route::post('/calculate', [CalculatorController::class, 'calculate'])->middleware('throttle:240,1')->name('calculate');
 Route::get('/target-tax', [TargetTaxController::class, 'index'])->name('target');
 Route::post('/target-tax/solve', [TargetTaxController::class, 'solve'])->middleware('throttle:240,1')->name('target.solve');
+Route::get('/return-guide', [ReturnGuideController::class, 'show'])->middleware('throttle:240,1')->name('return-guide');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -32,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/calculations/{calculation}', [CalculatorController::class, 'show'])->whereNumber('calculation')->name('calculations.show');
     Route::put('/calculations/{calculation}', [CalculationController::class, 'update'])->whereNumber('calculation')->name('calculations.update');
     Route::delete('/calculations/{calculation}', [CalculationController::class, 'destroy'])->whereNumber('calculation')->name('calculations.destroy');
+    Route::get('/calculations/{calculation}/return-guide', [ReturnGuideController::class, 'forCalculation'])->whereNumber('calculation')->name('calculations.guide');
 
     Route::post('/target-tax/ratios', [TargetTaxController::class, 'saveRatios'])->name('target.ratios');
 

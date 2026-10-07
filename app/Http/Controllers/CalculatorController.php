@@ -79,6 +79,7 @@ class CalculatorController extends Controller
                     'login' => route('login'),
                     'register' => route('register'),
                     'fresh' => route('home', ['new' => 1]),
+                    'guide' => route('return-guide'),
                 ],
             ],
         ]);

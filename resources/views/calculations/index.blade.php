@@ -91,6 +91,7 @@
                     <dl class="calc-fig"><dt>{{ __('Tax') }}</dt><dd class="tone-cost">{{ Money::bdt($calc->liability) }}</dd></dl>
                     <dl class="calc-fig"><dt>{{ __('Effective rate') }}</dt><dd>{{ Money::pct($calc->effective_rate) }}</dd></dl>
                     <div class="calc-actions">
+                        <a href="{{ route('calculations.guide', $calc) }}" class="icon-btn" title="{{ __('Return form guide') }}" aria-label="{{ __('Return form guide for :title', ['title' => $calc->title]) }}"><x-icon name="guide" size="16" /></a>
                         <a href="{{ route('calculations.show', $calc) }}" class="icon-btn" title="{{ __('Open') }}" aria-label="{{ __('Open :title', ['title' => $calc->title]) }}"><x-icon name="open" size="16" /></a>
                         <form method="POST" action="{{ route('calculations.destroy', $calc) }}">
                             @csrf @method('DELETE')

@@ -47,6 +47,12 @@ Anyone can use the calculators without an account. With an account, you can save
 - Splits the salary into components (Basic, House Rent, Medical, Conveyance, Festival Bonus, Other Bonuses, Overtime) using editable ratios, and produces copy-ready text such as `1 Basic TK. 732,193/-`.
 - Signed-in users can save their own ratios as the default.
 
+### Return form guide (`/return-guide`)
+- Shows where each calculated figure goes on NBR's return form **IT-11GA (2023)**, line by line, for the main statement, Schedule 1 (salary, non-government) and Schedule 5 (investment tax credit).
+- Opened from the calculator ("Where to enter this on the return") with the current inputs, or from a saved calculation (`/calculations/{id}/return-guide`). Without inputs it shows the blank map.
+- Also lists the e-return portal steps and the documents to keep ready, with sources and the date they were checked. Prints cleanly (light theme, no navigation).
+- Line mapping lives in `config/return_form.php`; `app/Services/Tax/ReturnGuide.php` only reads figures from the tax report.
+
 ### Accounts (optional)
 - Register, sign in and sign out. Passwords need 8 or more characters with letters and numbers. Sign-in is rate-limited.
 - **Saved calculations** (`/calculations`): a list with stats and a trend chart. You can open, rename or edit notes, delete, and **compare two side by side**.
@@ -152,6 +158,8 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | POST | `/logout` | ✓ | Sign out |
 | GET | `/calculations` | ✓ | Saved list |
 | GET | `/calculations/compare?a=&b=` | ✓ | Compare two |
+| GET | `/return-guide` | – | Return form guide (calculator inputs in the query string) |
+| GET | `/calculations/{id}/return-guide` | ✓ | Return form guide for a saved calculation |
 | POST | `/calculations` | ✓ | Save (JSON) |
 | GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
 | POST | `/target-tax/ratios` | ✓ | Save default salary split |

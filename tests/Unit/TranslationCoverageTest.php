@@ -15,7 +15,7 @@ class TranslationCoverageTest extends TestCase
     private const SCAN = ['app', 'resources/views', 'public/js', 'routes'];
 
     /** Config files whose user-facing labels are translated where they are shown. */
-    private const LABEL_KEYS = ['label', 'hint', 'income_year', 'question', 'reason', 'service', 'text', 'title', 'note'];
+    private const LABEL_KEYS = ['label', 'hint', 'income_year', 'question', 'reason', 'service', 'text', 'title', 'note', 'intro'];
 
     private string $root;
 

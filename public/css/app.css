@@ -231,6 +231,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
     border: 0; background: none; text-align: left; color: var(--ink); text-decoration: none; cursor: pointer;
 }
 .menu-panel a:hover, .menu-panel button:hover { background: var(--surface-2); }
+.nav-menu > summary {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px;
+    color: var(--ink-2); font-weight: 500;
+}
+.nav-menu > summary:hover, .nav-menu[open] > summary { background: var(--surface); color: var(--ink); }
+.nav-menu.active > summary { background: var(--surface); color: var(--green); box-shadow: inset 0 0 0 1px var(--line); }
+.nav-menu .menu-panel { left: 0; right: auto; min-width: 300px; z-index: 40; }
+.menu-panel a.tool { align-items: flex-start; }
+.menu-panel a.tool > span { display: grid; gap: 2px; }
+.menu-panel a.tool small { color: var(--muted); font-size: var(--t-xs); font-weight: 400; }
+.menu-panel a.tool.active b { color: var(--green); }
 
 /* ---------- buttons ---------- */
 .btn {
@@ -528,7 +539,8 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 }
 @media (max-width: 640px) {
     .topbar-inner { padding: 10px 14px; gap: 10px; }
-    .mainnav a span, .hide-sm, .logo-word { display: none; }
+    .mainnav a span, .nav-menu > summary span, .hide-sm, .logo-word { display: none; }
+    .nav-menu .menu-panel { position: fixed; left: 12px; right: 12px; top: 60px; min-width: 0; }
     .mainnav a { padding: 8px 10px; }
     .page { padding: 20px 14px 48px; }
     .ledger { grid-template-columns: 1fr 1fr; }
@@ -539,6 +551,40 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
     .field-row { grid-template-columns: 1fr; }
     .chart-box { height: 230px; }
 }
+/* ---------- guides & checklists ---------- */
+.guide-table td.guide-serial { width: 64px; font-family: var(--font-display); font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.guide-table td small { display: block; color: var(--muted); margin-top: 3px; font-size: var(--t-xs); white-space: normal; }
+.guide-table td:nth-child(2) { white-space: normal; }
+.guide-table td.r { white-space: nowrap; font-weight: 600; }
+.steps { list-style: none; counter-reset: step; display: grid; gap: 12px; padding: 0; margin: 0; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 32px 1fr; gap: 12px; align-items: start; }
+.steps li::before {
+    content: counter(step); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--mint); color: var(--green); font-weight: 700; font-family: var(--font-display);
+}
+.steps b { display: block; }
+.steps p { color: var(--muted); font-size: var(--t-sm); margin-top: 2px; }
+.checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.checklist label { display: flex; gap: 10px; align-items: flex-start; font-size: var(--t-sm); cursor: pointer; }
+.checklist input { margin-top: 3px; accent-color: var(--green); width: 16px; height: 16px; flex: none; }
+.sources { font-size: var(--t-xs); color: var(--muted); }
+.sources ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.sources a { color: inherit; }
+.result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.print-only { display: none; }
+
+/* ---------- print (return guide, wealth statement) ---------- */
+@media print {
+    .topbar, .footer, .toasts, .mobile-bar, .no-print, .skip-link { display: none !important; }
+    body { background: #fff; }
+    main.page { padding: 0; max-width: none; }
+    .panel { box-shadow: none; border-color: #ccc; }
+    .sec, .panel, tr { break-inside: avoid; }
+    .print-only { display: block; }
+    .sources a::after { content: " (" attr(href) ")"; word-break: break-all; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
 }

@@ -203,6 +203,17 @@ document.addEventListener('alpine:init', () => {
             return this.report.slabs.reduce((a, r) => ({ amount: a.amount + r.amount, tax: a.tax + r.tax }), { amount: 0, tax: 0 });
         },
         get heat() { return this.report.charts.heatmap; },
+        /** The return-form guide for exactly what is on screen (saved or not). */
+        get guideUrl() {
+            const f = this.form;
+            const params = new URLSearchParams();
+            ['year', 'category', 'gross_income', 'tds_paid', 'filing', 'disabled_children'].forEach((k) => {
+                if (f[k] !== undefined && f[k] !== null && f[k] !== '') params.set(k, f[k]);
+            });
+            if (f.new_taxpayer) params.set('new_taxpayer', 1);
+            Object.entries(f.investments || {}).forEach(([k, v]) => { if (Number(v)) params.set('investments[' + k + ']', v); });
+            return this.routes.guide + '?' + params.toString();
+        },
         raiseLabel(raise) {
             return raise === 0 ? KH.t('Today') : '+' + KH.num(Math.round(raise * 100)) + '%';
         },

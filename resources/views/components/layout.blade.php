@@ -40,6 +40,15 @@
                 <a href="{{ route('target') }}" @class(['active' => request()->routeIs('target')])>
                     <x-icon name="target" size="18" /> <span>{{ __('Target tax') }}</span>
                 </a>
+                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide')])>
+                    <summary><x-icon name="tools" size="18" /> <span>{{ __('Tools') }}</span> <x-icon name="chevron" size="14" class="hide-sm" /></summary>
+                    <div class="menu-panel">
+                        <a href="{{ route('return-guide') }}" @class(['tool', 'active' => request()->routeIs('return-guide', 'calculations.guide')])>
+                            <x-icon name="guide" size="18" />
+                            <span><b>{{ __('Return form guide') }}</b><small>{{ __('Where each number goes on the NBR return') }}</small></span>
+                        </a>
+                    </div>
+                </details>
                 @auth
                     <a href="{{ route('calculations.index') }}" @class(['active' => request()->routeIs('calculations.index', 'calculations.compare')])>
                         <x-icon name="folder" size="18" /> <span>{{ __('Saved') }}</span>
