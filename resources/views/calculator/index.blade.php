@@ -77,7 +77,7 @@
 
             <div class="slip-group">
                 <h2>{{ __('Tax already paid') }}</h2>
-                <p>{{ __('TDS your employer deducted, plus any advance tax (car, interest, instalments).') }}</p>
+                <p>{{ __('TDS your employer deducted, plus any advance tax (car, interest, instalments).') }} <a href="{{ route('tds') }}">{{ __('Plan monthly TDS') }}</a></p>
                 <div class="money">
                     <span>৳</span>
                     <input class="input" id="tds" inputmode="numeric" autocomplete="off" :placeholder="KH.num(0)" aria-label="{{ __('Tax already paid') }}" x-init="money($el, 'tds')">

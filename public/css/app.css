@@ -574,6 +574,10 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .print-only { display: none; }
+.money-sm .input { padding-block: 6px; font-size: var(--t-sm); min-width: 110px; }
+.tds-table td { padding-block: 6px; }
+.tds-table tr.is-done td:first-child { color: var(--muted); }
+.tds-check { width: 18px; height: 18px; accent-color: var(--green); }
 .wealth-item { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; }
 .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: var(--t-xs); font-weight: 600; background: var(--surface-2); margin-top: 4px; }
 .pill.tone-good { background: var(--mint); }

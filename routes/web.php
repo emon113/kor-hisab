@@ -7,6 +7,7 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\LangController;
 use App\Http\Controllers\ReturnGuideController;
 use App\Http\Controllers\TargetTaxController;
+use App\Http\Controllers\TdsPlannerController;
 use App\Http\Controllers\WealthController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,8 @@ Route::post('/calculate', [CalculatorController::class, 'calculate'])->middlewar
 Route::get('/target-tax', [TargetTaxController::class, 'index'])->name('target');
 Route::post('/target-tax/solve', [TargetTaxController::class, 'solve'])->middleware('throttle:240,1')->name('target.solve');
 Route::get('/return-guide', [ReturnGuideController::class, 'show'])->middleware('throttle:240,1')->name('return-guide');
+Route::get('/tds-planner', [TdsPlannerController::class, 'index'])->name('tds');
+Route::post('/tds-planner/plan', [TdsPlannerController::class, 'plan'])->middleware('throttle:240,1')->name('tds.plan');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

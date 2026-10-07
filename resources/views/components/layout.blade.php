@@ -40,9 +40,13 @@
                 <a href="{{ route('target') }}" @class(['active' => request()->routeIs('target')])>
                     <x-icon name="target" size="18" /> <span>{{ __('Target tax') }}</span>
                 </a>
-                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide')])>
+                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds')])>
                     <summary><x-icon name="tools" size="18" /> <span>{{ __('Tools') }}</span> <x-icon name="chevron" size="14" class="hide-sm" /></summary>
                     <div class="menu-panel">
+                        <a href="{{ route('tds') }}" @class(['tool', 'active' => request()->routeIs('tds')])>
+                            <x-icon name="calendar" size="18" />
+                            <span><b>{{ __('Monthly TDS planner') }}</b><small>{{ __('How much tax to deduct each month, so June has no surprise') }}</small></span>
+                        </a>
                         <a href="{{ route('return-guide') }}" @class(['tool', 'active' => request()->routeIs('return-guide', 'calculations.guide')])>
                             <x-icon name="guide" size="18" />
                             <span><b>{{ __('Return form guide') }}</b><small>{{ __('Where each number goes on the NBR return') }}</small></span>

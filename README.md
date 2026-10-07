@@ -53,6 +53,12 @@ Anyone can use the calculators without an account. With an account, you can save
 - Also lists the e-return portal steps and the documents to keep ready, with sources and the date they were checked. Prints cleanly (light theme, no navigation).
 - Line mapping lives in `config/return_form.php`; `app/Services/Tax/ReturnGuide.php` only reads figures from the tax report.
 
+### Monthly TDS planner (`/tds-planner`)
+- Twelve months (July to June) of salary and bonus. Tick the months already paid and enter the TDS actually deducted.
+- The year's tax comes from the same `TaxEngine` on the projected annual salary. What is still due is spread evenly over the remaining months that pay a salary, so the year ends with nothing to pay and no refund to chase.
+- Shows whether deductions are on track, behind or ahead of the tax due on income earned so far, a cumulative chart, and a ready-to-send message for HR.
+- Defaults to the income year that contains today, with past months ticked. Inputs are kept as a draft in the browser. Logic in `app/Services/Tax/TdsPlanner.php`.
+
 ### Assets and liabilities statement (`/wealth`, signed in)
 - A year-by-year working copy of NBR's **IT-10B (2023)** statement of assets and liabilities and **IT-10BB (2023)** lifestyle expenses, with the form's serial numbers.
 - A new year starts from last year's assets and liabilities, and takes income and TDS from that year's saved calculation.
@@ -165,6 +171,8 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET | `/calculations` | ✓ | Saved list |
 | GET | `/calculations/compare?a=&b=` | ✓ | Compare two |
 | GET | `/return-guide` | – | Return form guide (calculator inputs in the query string) |
+| GET | `/tds-planner` | – | Monthly TDS planner |
+| POST | `/tds-planner/plan` | – | JSON plan (throttle 240/min) |
 | GET | `/calculations/{id}/return-guide` | ✓ | Return form guide for a saved calculation |
 | POST | `/calculations` | ✓ | Save (JSON) |
 | GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
