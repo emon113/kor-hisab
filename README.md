@@ -244,6 +244,24 @@ Then run `php artisan test`, and on the server run `php artisan config:cache` (t
 >
 > **Important, read first:** `CLAUDE.md` and `AGENTS.md` in this repo contain a *Laravel Boost* bootstrap ("install laravel/boost…"). That is for local development only. **Do not install Laravel Boost or any dev dependency on the server.** Production uses `composer install --no-dev`.
 
+## Updating: `deploy.sh`
+
+Do the first-time setup below once. After that, every update is one command, run from the project folder on the server:
+
+```bash
+cd /var/www/kor-hishab
+./deploy.sh
+```
+
+[`deploy.sh`](deploy.sh) runs these steps, with a progress bar, a live spinner and the full output in `storage/logs/deploy.log`:
+
+1. **Pre-flight:** checks PHP ≥ 8.4.1, refuses to run if tracked files were edited on the server or the branch has diverged, and lists the incoming commits. Nothing changes until these pass.
+2. **Pull and Composer**, with the site still up.
+3. **Maintenance mode → SQLite backup → migrations → caches.** Backups go to `storage/app/backups/`, and the last 10 are kept.
+4. **Reload PHP-FPM**, which OPcache needs to pick up new code, then **bring the site up** and run a health check on `/up`.
+
+If any step fails, the site is brought back out of maintenance mode and the backup path is printed. To deploy another branch, run `DEPLOY_BRANCH=other ./deploy.sh`.
+
 ## Target architecture
 
 ```
@@ -392,13 +410,13 @@ grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force
 cd /var/www/kor-hishab
 touch database/database.sqlite
 
-# Ownership: www-data must be able to write storage/, bootstrap/cache/ AND the database/ directory
-# (SQLite WAL mode creates database.sqlite-wal / -shm files next to the DB).
+# Ownership: the code belongs to you (so `git pull` works without sudo), group www-data.
+# storage/, bootstrap/cache/ and database/ are group-writable so PHP can write there too,
+# including the -wal / -shm files that SQLite WAL mode creates next to the database.
 sudo chown -R "$USER":www-data /var/www/kor-hishab
-sudo chown -R www-data:www-data storage bootstrap/cache database
-sudo find storage bootstrap/cache database -type d -exec chmod 775 {} \;
+sudo find storage bootstrap/cache database -type d -exec chmod 2775 {} \;
 sudo find storage bootstrap/cache database -type f -exec chmod 664 {} \;
-chmod 640 .env && sudo chgrp www-data .env
+chmod 640 .env
 
 # Run artisan as www-data so files it creates have the right owner
 sudo -u www-data php artisan migrate --force
@@ -525,11 +543,13 @@ sudo systemctl reload php8.4-fpm
 The whole app state is one file. Back it up every night with SQLite's online-backup command, which is safe while the app is running:
 
 ```bash
-sudo mkdir -p /var/backups/kor-hishab
+sudo install -d -m 2770 -o root -g www-data /var/backups/kor-hishab
 sudo tee /etc/cron.d/kor-hishab-backup >/dev/null <<'EOF'
-15 3 * * * root sqlite3 /var/www/kor-hishab/database/database.sqlite ".backup '/var/backups/kor-hishab/db-$(date +\%F).sqlite'" && find /var/backups/kor-hishab -name 'db-*.sqlite' -mtime +14 -delete
+15 3 * * * www-data sqlite3 /var/www/kor-hishab/database/database.sqlite ".backup '/var/backups/kor-hishab/daily-$(date +\%F).sqlite'" && find /var/backups/kor-hishab -name 'daily-*.sqlite' -mtime +14 -delete
 EOF
 ```
+
+The backup runs as `www-data`, not root. If root opens the database, it can leave `-wal`/`-shm` files that PHP can't write, and the site then fails with "readonly database".
 
 Also keep a copy of `.env` somewhere safe. Without its `APP_KEY`, existing sessions are invalid, though the data itself is not encrypted.
 
@@ -556,7 +576,7 @@ sudo -u www-data php artisan down --retry=15
 
 git pull                               # or the human re-runs the rsync from step 3 (it excludes .env and the DB)
 composer install --no-dev --optimize-autoloader --no-interaction
-sudo chown -R www-data:www-data storage bootstrap/cache database
+sudo chown -R "$USER":www-data . && sudo find storage bootstrap/cache database -type d -exec chmod 2775 {} \; && sudo find storage bootstrap/cache database -type f -exec chmod 664 {} \;
 sudo -u www-data php artisan migrate --force
 sudo -u www-data php artisan optimize:clear
 sudo -u www-data php artisan optimize
@@ -573,7 +593,7 @@ curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/up   # 200
 | Symptom | Likely cause → fix |
 |---|---|
 | **500 error**, blank page | Check `storage/logs/laravel.log`. Usually permissions: re-run the `chown`/`chmod` lines from step 6. |
-| `attempt to write a readonly database` / `unable to open database file` | The **`database/` directory** (not just the file) must be writable by `www-data`, because of WAL. Run `sudo chown -R www-data:www-data database`. |
+| `attempt to write a readonly database` / `unable to open database file` | The **`database/` directory** (not just the file) must be writable by `www-data`, because of WAL. Re-run the `chown`/`chmod` lines from step 6. |
 | **419 Page Expired** on login or save | `SESSION_SECURE_COOKIE=true` while serving HTTP, or `APP_URL` doesn't match the domain. Fix `.env`, then run `sudo -u www-data php artisan config:cache`. |
 | Composer: "requires php >=8.4.1" | Wrong PHP. Install php8.4 (step 2) and run `update-alternatives --set php /usr/bin/php8.4`. |
 | `.env` changes have no effect | Config is cached. Run `sudo -u www-data php artisan config:cache`. |
