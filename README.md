@@ -1,0 +1,589 @@
+# Kor Hishab — Bangladesh Salary Tax Calculator
+
+**Kor Hishab** (কর হিসাব, "tax calculation") is a web app that calculates Bangladesh personal income tax for salaried people, explains the result, and helps lower it. It uses the **Income Tax Act 2023 as amended by the Finance Act 2026** and also includes the projected years from the government's enacted 5-year roadmap.
+
+Anyone can use the calculators without an account. With an account, you can save calculations, compare them, and store a default salary split.
+
+---
+
+## Table of contents
+
+1. [Features](#features)
+2. [Tech stack](#tech-stack)
+3. [How the tax is calculated](#how-the-tax-is-calculated)
+4. [Project structure](#project-structure)
+5. [Routes](#routes)
+6. [Database](#database)
+7. [Configuration (.env)](#configuration-env)
+8. [Local development](#local-development)
+9. [Testing](#testing)
+10. [Admin and maintenance commands](#admin-and-maintenance-commands)
+11. [Updating tax rules](#updating-tax-rules)
+12. [**Deploying to a VPS (runbook for Claude)**](#deploying-to-a-vps-runbook-for-claude)
+
+---
+
+## Features
+
+### Tax calculator (`/`)
+- Inputs: assessment year, taxpayer category, gross annual salary, rebate-eligible investments (DPS, savings certificates, mutual funds, listed shares), TDS already deducted, filing period, new-taxpayer flag, and the number of disabled children or dependents.
+- Output: tax-free salary (the ⅓ exemption), taxable income, a slab-by-slab breakdown, gross tax, investment rebate, minimum-tax top-up, early or late filing adjustment, final liability, amount still to pay or refund due, effective and marginal rates, and monthly take-home pay.
+- **Rebate optimiser:** shows how much eligible investment unlocks the full rebate, how much more to invest, an example plan that fills capped instruments first, and any investment that earns no rebate.
+- **Plain-language predictions:** headroom before the next slab, the filing deadline and its saving, TDS status, how much of a ৳10,000 raise you keep, bonus tax, the effect of a 10% raise, and the effect of future roadmap years.
+- **Raise scenarios** from 0% to 50%.
+- **Charts** (Chart.js): income split, tax waterfall, effective and marginal rate curve, an income × investment heatmap, tax across years, tax across categories, and a paycheck split.
+- Number grouping toggle: international (1,335,524) or lakh/crore (13,35,524), stored in the `kh_grouping` cookie.
+- The browser keeps a draft of your inputs.
+
+### Target tax to salary (`/target-tax`)
+- A reverse calculator: enter the tax you want to pay and it finds the smallest gross salary that produces it, using a binary search over the tax engine.
+- Rebate modes: no investment, a custom investment, or the maximum useful investment.
+- Splits the salary into components (Basic, House Rent, Medical, Conveyance, Festival Bonus, Other Bonuses, Overtime) using editable ratios, and produces copy-ready text such as `1 Basic TK. 732,193/-`.
+- Signed-in users can save their own ratios as the default.
+
+### Accounts (optional)
+- Register, sign in and sign out. Passwords need 8 or more characters with letters and numbers. Sign-in is rate-limited.
+- **Saved calculations** (`/calculations`): a list with stats and a trend chart. You can open, rename or edit notes, delete, and **compare two side by side**.
+- **Account page:** change your name, email and password.
+- There is no email or password-reset flow, so no mail server is needed. An admin resets passwords from the command line (see [Admin and maintenance commands](#admin-and-maintenance-commands)).
+
+### Security notes
+- The server recalculates every saved figure from the inputs. Numbers sent from the browser are never trusted.
+- Users can only see their own calculations. Other users' calculations return a 404.
+- Rate limits: `/calculate` and `/target-tax/solve` allow 240 requests per minute, login 20, and register 10. Each email and IP pair also gets 5 failed sign-ins before a lockout.
+
+---
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Language | **PHP 8.4.1 or newer** (required: the locked Symfony 8 components need ≥ 8.4.1) |
+| Framework | Laravel 13 |
+| Database | SQLite by default (WAL mode, busy timeout 5 s, set in `AppServiceProvider`). MySQL and PostgreSQL also work. |
+| Sessions, cache, rate limits | `database` driver (no Redis needed) |
+| Frontend | Blade templates with **plain JS and CSS in `public/`**, plus vendored Alpine.js 3.17.4 and Chart.js 4.5.1 in `public/vendor/`. Fonts are self-hosted in `public/fonts/`. |
+| Build step | **None.** `vite.config.js`, `package.json` and `resources/css|js` are unused leftovers from the Laravel skeleton. The layout loads `public/css/app.css` and `public/js/*.js` directly, so **Node.js is not needed to run or deploy the app**. |
+| Tests | PHPUnit 12 (26 tests: tax engine unit tests, plus auth and calculation feature tests) |
+
+---
+
+## How the tax is calculated
+
+All tax rules live in **[config/tax.php](config/tax.php)**. The engine has no hard-coded numbers.
+
+For each assessment year:
+
+1. **Salary exemption:** ⅓ of gross salary is tax-free, capped at ৳500,000.
+2. **Taxable income** = gross − exemption.
+3. **Tax-free threshold** by category (AY 2026-27 / 2027-28):
+
+   | Category | Threshold |
+   |---|---|
+   | General | ৳400,000 |
+   | Woman or senior citizen (65+) | ৳450,000 |
+   | Person with disability / third gender | ৳525,000 |
+   | War-wounded freedom fighter / July fighter | ৳550,000 |
+
+   Add ৳50,000 for each disabled child or dependent.
+4. **Slabs above the threshold:** the next ৳300k at 10%, the next ৳400k at 15%, the next ৳500k at 20%, the next ৳2M at 25%, and the rest at 30%. The projected years 2028-30 and 2030-31 raise the thresholds and add a 35% top slab.
+5. **Investment rebate:** the lowest of 10% of eligible investment, 3% of taxable income, and ৳750,000. Each instrument has a cap: DPS ৳120k, savings certificates ৳500k, mutual funds ৳500k, shares uncapped.
+6. **Minimum tax:** ৳5,000, or ৳1,000 for a new taxpayer, when taxable income is above the threshold. The rebate can never push tax below it.
+7. **Filing-period adjustment:**
+   - Jul–Sep: 5% rebate, up to ৳25,000
+   - Oct–Dec: no change
+   - Jan–Mar: +2%, at least ৳3,000
+   - Apr–Jun: +5%, at least ৳5,000
+8. **Payable** = liability − TDS paid. A negative result is a refund.
+
+Code:
+- `app/Services/Tax/TaxEngine.php`: pure arithmetic with no framework dependency (a singleton built from `config('tax')`).
+- `app/Services/Tax/TaxReport.php`: builds everything the UI shows, including the summary, slabs, optimiser, scenarios, charts and predictions. Dates use the Asia/Dhaka timezone.
+- `app/Services/Tax/TargetTaxSolver.php`: reverse solver and salary split.
+- `app/Support/Money.php`: ৳ formatting with international or lakh grouping.
+
+---
+
+## Project structure
+
+```
+app/
+  Http/Controllers/
+    CalculatorController.php     # "/" page, POST /calculate (JSON), open a saved calculation
+    TargetTaxController.php      # /target-tax page, solve (JSON), save default ratios
+    CalculationController.php    # saved list, store/update/delete (JSON), compare
+    AccountController.php        # profile + password
+    Auth/AuthController.php      # login, register, logout
+  Http/Requests/                 # validation for calculator, target-tax and save inputs
+  Models/User.php                # + salary_ratios (json)
+  Models/Calculation.php         # saved calculation (inputs + summary as json)
+  Providers/AppServiceProvider.php  # TaxEngine singleton, SQLite WAL, password rules
+  Services/Tax/                  # TaxEngine, TaxReport, TargetTaxSolver
+  Support/Money.php
+config/tax.php                   # ALL tax rules
+config/korhishab.php             # seed (owner) account settings
+database/migrations/             # users, cache, jobs, calculations, salary_ratios
+database/seeders/DatabaseSeeder.php  # creates the owner account + one example calculation
+public/css/app.css, public/js/{app,calculator,target}.js   # the real frontend
+public/vendor/                   # alpine + chart.js (vendored)
+resources/views/                 # Blade: calculator, target, calculations, auth, account, layout
+routes/web.php                   # all HTTP routes
+routes/console.php               # `user:password` admin command
+tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
+```
+
+---
+
+## Routes
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `/` | – | Calculator |
+| POST | `/calculate` | – | JSON tax report (throttle 240/min) |
+| GET | `/target-tax` | – | Target-tax page |
+| POST | `/target-tax/solve` | – | JSON solver result (throttle 240/min) |
+| GET/POST | `/login`, `/register` | guest | Sign in / create account |
+| POST | `/logout` | ✓ | Sign out |
+| GET | `/calculations` | ✓ | Saved list |
+| GET | `/calculations/compare?a=&b=` | ✓ | Compare two |
+| POST | `/calculations` | ✓ | Save (JSON) |
+| GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
+| POST | `/target-tax/ratios` | ✓ | Save default salary split |
+| GET / PUT | `/account`, `/account/password` | ✓ | Profile / password |
+| GET | `/up` | – | Health check (HTTP 200 when the app boots) |
+
+---
+
+## Database
+
+| Table | Notes |
+|---|---|
+| `users` | Standard Laravel users plus `salary_ratios` (json, nullable) |
+| `calculations` | `user_id` (cascade delete), `title`, `notes`, `tax_year`, `category`, `gross_income`, `liability`, `payable`, `effective_rate`, `inputs` (json), `summary` (json). Indexed on (`user_id`, `updated_at`). |
+| `sessions`, `cache`, `cache_locks` | Database session, cache and rate-limiter storage |
+| `jobs`, `job_batches`, `failed_jobs` | From the skeleton. **The app dispatches no jobs and schedules no tasks**, so no queue worker or cron is needed. |
+
+The default database file is `database/database.sqlite`. Git ignores it (`database/.gitignore`).
+
+---
+
+## Configuration (.env)
+
+Start from `.env.example`. The keys that matter:
+
+| Key | Dev | Production |
+|---|---|---|
+| `APP_NAME` | `"Kor Hishab"` | `"Kor Hishab"` |
+| `APP_ENV` | `local` | `production` |
+| `APP_DEBUG` | `true` | **`false`** |
+| `APP_KEY` | `php artisan key:generate` | generated once on the server, **never changed afterwards** (changing it logs everyone out) |
+| `APP_URL` | `http://localhost:8000` | `https://your-domain` |
+| `DB_CONNECTION` | `sqlite` | `sqlite` (recommended) |
+| `SESSION_DRIVER` / `CACHE_STORE` | `database` | `database` |
+| `SESSION_SECURE_COOKIE` | – | `true` (once HTTPS works) |
+| `LOG_LEVEL` | `debug` | `warning` |
+| `MAIL_MAILER` | `log` | `log` (the app sends no mail) |
+| `SEED_USER_NAME` | owner's display name | used by `db:seed` |
+| `SEED_USER_EMAIL` | owner's email | used by `db:seed` |
+| `SEED_USER_PASSWORD` | optional | leave **empty** to have a strong random password generated and printed once |
+
+---
+
+## Local development
+
+Requirements: PHP ≥ 8.4.1 with `pdo_sqlite`, `mbstring`, `xml`, `curl`, `zip`, `intl`, `bcmath`, and Composer 2.
+
+```bash
+composer install
+cp .env.example .env            # then set APP_NAME="Kor Hishab"
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate
+php artisan db:seed             # optional: owner account + example calculation
+php artisan serve               # http://localhost:8000
+```
+
+To change the UI, edit `public/css/app.css`, `public/js/*.js` and `resources/views/**`. No build step is needed. The layout adds a `?v=<filemtime>` query string to bust the cache automatically.
+
+---
+
+## Testing
+
+```bash
+php artisan test        # or: composer test
+```
+
+Tests use an in-memory SQLite database, as configured in `phpunit.xml`.
+
+---
+
+## Admin and maintenance commands
+
+```bash
+php artisan user:password someone@example.com   # set a new password (prompts; 8+ chars, letters + numbers)
+php artisan db:seed --force                      # create the owner account if missing (never overwrites)
+php artisan tinker                               # e.g. App\Models\User::count()
+php artisan down / php artisan up                # maintenance mode
+```
+
+---
+
+## Updating tax rules
+
+When the NBR changes the rules, edit **only** `config/tax.php`:
+- Add a new entry under `years` (copy an existing one), then update `default_year`.
+- Thresholds, slabs, the exemption, the rebate, minimum tax, instrument caps, filing periods and the default salary split all live there.
+
+Then run `php artisan test`, and on the server run `php artisan config:cache` (the deploy update steps already include this).
+
+---
+
+# Deploying to a VPS (runbook for Claude)
+
+> **This section is written for a Claude Code agent running on the target VPS.** Work through the steps in order. Each step is safe to re-run, and each ends with a **Verify** check. Do not move on until it passes.
+>
+> **Important, read first:** `CLAUDE.md` and `AGENTS.md` in this repo contain a *Laravel Boost* bootstrap ("install laravel/boost…"). That is for local development only. **Do not install Laravel Boost or any dev dependency on the server.** Production uses `composer install --no-dev`.
+
+## Target architecture
+
+```
+Internet ──► Nginx :80/:443 (Let's Encrypt TLS) ──► PHP-FPM 8.4 (unix socket) ──► Laravel app
+                                                                                  └─► SQLite file: /var/www/kor-hishab/database/database.sqlite
+```
+
+- OS: **Ubuntu 22.04 / 24.04** (Debian 12 is also fine; see the note in step 2).
+- App path: **`/var/www/kor-hishab`**. Runs as the **`www-data`** user.
+- No Node.js, Redis, MySQL, queue worker, cron or mail server is needed.
+
+## Step 0 — Collect inputs (ask the human if missing)
+
+| Variable | Example | Needed for |
+|---|---|---|
+| `DOMAIN` | `tax.example.com` | Nginx + TLS. Its DNS **A record must already point to this VPS's public IP**. If there's no domain yet, use the server IP and skip step 8. |
+| `CERTBOT_EMAIL` | `admin@example.com` | Let's Encrypt registration |
+| `SEED_USER_NAME` | `Emon` | Owner account |
+| `SEED_USER_EMAIL` | `emon@example.com` | Owner account |
+| Code source | git URL **or** "already uploaded to `/var/www/kor-hishab`" | Step 3 |
+
+Use the values in the commands below. Example: `export DOMAIN=tax.example.com APP_DIR=/var/www/kor-hishab`.
+
+## Step 1 — Inspect the server before changing anything
+
+```bash
+cat /etc/os-release | head -3
+whoami; sudo -n true && echo "sudo ok"
+php -v 2>/dev/null | head -1
+nginx -v 2>&1; apache2 -v 2>/dev/null | head -1
+ls /etc/nginx/sites-enabled/ 2>/dev/null
+sudo ss -tlnp | grep -E ':80 |:443 ' || true
+ls -la /var/www/ 2>/dev/null
+curl -s -4 ifconfig.me; echo; getent ahostsv4 "$DOMAIN" | head -1
+```
+
+**Rules:**
+- If **Apache** is using port 80, stop and ask the human. Don't remove it on your own.
+- If other sites already exist in `/etc/nginx/sites-enabled/`, **leave them alone**. Only add `kor-hishab`. Remove `default` only if it is the stock Nginx welcome page and nothing else uses it.
+- If `/var/www/kor-hishab` already exists with a `.env` and `database/database.sqlite`, this is an **update**, not a fresh install. Go to [Updating an existing deployment](#updating-an-existing-deployment).
+- If the domain does not resolve to this server's IP, warn the human. Steps 2–7 can still run, but step 8 (TLS) will fail until DNS is fixed.
+
+## Step 2 — Install system packages
+
+```bash
+sudo apt-get update
+sudo apt-get install -y software-properties-common ca-certificates curl unzip git sqlite3 nginx ufw
+```
+
+**PHP 8.4 is required** (≥ 8.4.1). Ubuntu 24.04 ships 8.3, which is **too old**. Use the ondrej PPA:
+
+```bash
+sudo add-apt-repository -y ppa:ondrej/php     # Debian 12 instead: use packages.sury.org/php (see deb.sury.org instructions)
+sudo apt-get update
+sudo apt-get install -y php8.4-fpm php8.4-cli php8.4-sqlite3 php8.4-mbstring php8.4-xml \
+  php8.4-curl php8.4-zip php8.4-intl php8.4-bcmath php8.4-opcache
+```
+
+Install Composer 2 if it is missing:
+
+```bash
+command -v composer || {
+  curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
+  sudo php8.4 /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+  rm /tmp/composer-setup.php
+}
+```
+
+**Verify:**
+```bash
+php8.4 -v | head -1                       # PHP 8.4.x
+php8.4 -m | grep -E 'pdo_sqlite|mbstring|intl|bcmath|xml|curl|zip' | wc -l   # ≥ 7
+composer --version                        # Composer 2.x
+systemctl is-active php8.4-fpm nginx      # active / active
+```
+
+If the default `php` CLI isn't 8.4, set it with `sudo update-alternatives --set php /usr/bin/php8.4`.
+
+## Step 3 — Put the code in place
+
+**Option A: from git** (if the human gave a repo URL):
+```bash
+sudo mkdir -p /var/www && sudo chown "$USER":www-data /var/www
+git clone <REPO_URL> /var/www/kor-hishab
+```
+
+**Option B: uploaded from the developer's machine.** The human runs this **locally** from the project folder:
+```bash
+rsync -avz --exclude vendor --exclude node_modules --exclude .env \
+  --exclude 'database/*.sqlite*' --exclude 'storage/logs/*' --exclude 'storage/framework/*/*' \
+  --exclude 'bootstrap/cache/*.php' --exclude .idea --exclude .vscode \
+  ./ user@VPS_IP:/var/www/kor-hishab/
+```
+
+> Never copy the local `.env` or `database/database.sqlite` to the server. Production gets its own.
+
+**Verify:** `ls /var/www/kor-hishab/artisan /var/www/kor-hishab/composer.lock /var/www/kor-hishab/public/index.php`
+
+## Step 4 — Install PHP dependencies
+
+```bash
+cd /var/www/kor-hishab
+composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+```
+
+**Verify:** `test -f vendor/autoload.php && echo ok`. If Composer complains about the PHP version, step 2 did not install or select PHP 8.4.
+
+## Step 5 — Environment file
+
+Create `.env` **only if it doesn't exist yet**:
+
+```bash
+cd /var/www/kor-hishab
+[ -f .env ] && echo ".env exists — do not overwrite" || cp .env.example .env
+```
+
+Then set these values in `.env` (edit the existing lines and add the missing ones):
+
+```dotenv
+APP_NAME="Kor Hishab"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://DOMAIN            # use http://SERVER_IP if there's no domain/TLS
+LOG_LEVEL=warning
+DB_CONNECTION=sqlite
+SESSION_DRIVER=database
+CACHE_STORE=database
+SESSION_SECURE_COOKIE=true        # set to false if serving plain HTTP (no TLS)
+MAIL_MAILER=log
+SEED_USER_NAME="<name>"
+SEED_USER_EMAIL=<email>
+SEED_USER_PASSWORD=
+```
+
+Generate the key **only if `APP_KEY` is empty**:
+
+```bash
+grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force
+```
+
+**Verify:** `grep -E '^(APP_ENV|APP_DEBUG|APP_URL|APP_KEY)=' .env`. Expect production, false, the right URL, and a key starting with `base64:`.
+
+## Step 6 — Database, permissions, caches
+
+```bash
+cd /var/www/kor-hishab
+touch database/database.sqlite
+
+# Ownership: www-data must be able to write storage/, bootstrap/cache/ AND the database/ directory
+# (SQLite WAL mode creates database.sqlite-wal / -shm files next to the DB).
+sudo chown -R "$USER":www-data /var/www/kor-hishab
+sudo chown -R www-data:www-data storage bootstrap/cache database
+sudo find storage bootstrap/cache database -type d -exec chmod 775 {} \;
+sudo find storage bootstrap/cache database -type f -exec chmod 664 {} \;
+chmod 640 .env && sudo chgrp www-data .env
+
+# Run artisan as www-data so files it creates have the right owner
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan db:seed --force
+sudo -u www-data php artisan optimize          # config, route, view and event caches
+```
+
+`db:seed` prints **"Generated password: …"** once. **Copy it and give it to the human**, because it is not stored anywhere in plain text. If you miss it, reset it with `sudo -u www-data php artisan user:password <email>`.
+
+**Verify:**
+```bash
+sudo -u www-data php artisan migrate:status | tail -6     # all "Ran"
+sudo -u www-data php artisan about --only=environment     # production, debug OFF
+sqlite3 database/database.sqlite "select count(*) from users;"   # ≥ 1
+```
+
+## Step 7 — Nginx site
+
+Find the PHP-FPM socket: `ls /run/php/` (normally `/run/php/php8.4-fpm.sock`).
+
+Write `/etc/nginx/sites-available/kor-hishab`. Replace `DOMAIN`, or use `_` / the server IP if there's no domain:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name DOMAIN;
+    root /var/www/kor-hishab/public;
+    index index.php;
+    charset utf-8;
+    client_max_body_size 2m;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    # Static assets are cache-busted with ?v=<mtime>, so long caching is safe
+    location ~* \.(?:css|js|woff2|ico|svg|png|jpg)$ {
+        expires 30d;
+        add_header Cache-Control "public";
+        try_files $uri =404;
+    }
+
+    location ~ ^/index\.php(/|$) {
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    # Block every other .php file and dotfiles (.env, .git, …)
+    location ~ \.php$ { return 404; }
+    location ~ /\.(?!well-known).* { deny all; }
+
+    error_page 404 /index.php;
+}
+```
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/kor-hishab /etc/nginx/sites-enabled/kor-hishab
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Firewall. **Allow SSH before enabling ufw**, or you will lock yourself out:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
+```
+
+**Verify:**
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -H "Host: $DOMAIN" http://127.0.0.1/up    # 200
+curl -s -H "Host: $DOMAIN" http://127.0.0.1/ | grep -o '<title>[^<]*'              # Kor Hishab
+curl -s -o /dev/null -w '%{http_code}\n' -H "Host: $DOMAIN" http://127.0.0.1/.env  # 403 or 404, never 200
+```
+
+## Step 8 — HTTPS (skip if there's no domain)
+
+```bash
+sudo apt-get install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$CERTBOT_EMAIL" --redirect
+```
+
+Certbot sets up automatic renewal. Check it with `sudo certbot renew --dry-run`.
+
+If there's no TLS, set `SESSION_SECURE_COOKIE=false` and `APP_URL=http://…` in `.env`, then run `sudo -u www-data php artisan config:cache`. Otherwise sign-in silently fails, because the browser drops the secure cookie over HTTP.
+
+**Verify:**
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/up     # 200
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' http://$DOMAIN/   # 301 → https://
+```
+
+## Step 9 — PHP tuning (recommended)
+
+Create `/etc/php/8.4/fpm/conf.d/99-kor-hishab.ini`:
+
+```ini
+opcache.enable=1
+opcache.memory_consumption=128
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0
+expose_php=Off
+memory_limit=256M
+```
+
+`validate_timestamps=0` means PHP code changes only take effect after `sudo systemctl reload php8.4-fpm`. The update procedure below already does this.
+
+```bash
+sudo systemctl reload php8.4-fpm
+```
+
+## Step 10 — Backups (SQLite)
+
+The whole app state is one file. Back it up every night with SQLite's online-backup command, which is safe while the app is running:
+
+```bash
+sudo mkdir -p /var/backups/kor-hishab
+sudo tee /etc/cron.d/kor-hishab-backup >/dev/null <<'EOF'
+15 3 * * * root sqlite3 /var/www/kor-hishab/database/database.sqlite ".backup '/var/backups/kor-hishab/db-$(date +\%F).sqlite'" && find /var/backups/kor-hishab -name 'db-*.sqlite' -mtime +14 -delete
+EOF
+```
+
+Also keep a copy of `.env` somewhere safe. Without its `APP_KEY`, existing sessions are invalid, though the data itself is not encrypted.
+
+**Restore:** `php artisan down`, copy the backup over `database/database.sqlite`, delete any `-wal`/`-shm` files, fix ownership to `www-data`, then `php artisan up`.
+
+## Step 11 — Final acceptance check
+
+Report each result to the human:
+
+1. `https://DOMAIN/` loads the calculator, and the figures and charts render.
+2. `https://DOMAIN/target-tax` loads, and changing the target updates the salary.
+3. Sign in with the seeded owner account, save a calculation, and confirm it appears in **Saved**.
+4. `sudo tail -n 50 /var/www/kor-hishab/storage/logs/laravel.log` shows no new errors.
+5. Tell the human the URL, the owner email, the **generated password** (from step 6), and how to reset it: `sudo -u www-data php artisan user:password <email>`.
+
+---
+
+## Updating an existing deployment
+
+```bash
+cd /var/www/kor-hishab
+sudo -u www-data sqlite3 database/database.sqlite ".backup 'database/pre-deploy.sqlite'"   # safety copy
+sudo -u www-data php artisan down --retry=15
+
+git pull                               # or the human re-runs the rsync from step 3 (it excludes .env and the DB)
+composer install --no-dev --optimize-autoloader --no-interaction
+sudo chown -R www-data:www-data storage bootstrap/cache database
+sudo -u www-data php artisan migrate --force
+sudo -u www-data php artisan optimize:clear
+sudo -u www-data php artisan optimize
+sudo systemctl reload php8.4-fpm
+
+sudo -u www-data php artisan up
+curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/up   # 200
+```
+
+**Rollback:** check out the previous commit (or re-upload the previous files), restore `database/pre-deploy.sqlite` if a migration changed data, then run `composer install --no-dev`, `optimize`, `reload php8.4-fpm` and `up`.
+
+## Troubleshooting
+
+| Symptom | Likely cause → fix |
+|---|---|
+| **500 error**, blank page | Check `storage/logs/laravel.log`. Usually permissions: re-run the `chown`/`chmod` lines from step 6. |
+| `attempt to write a readonly database` / `unable to open database file` | The **`database/` directory** (not just the file) must be writable by `www-data`, because of WAL. Run `sudo chown -R www-data:www-data database`. |
+| **419 Page Expired** on login or save | `SESSION_SECURE_COOKIE=true` while serving HTTP, or `APP_URL` doesn't match the domain. Fix `.env`, then run `sudo -u www-data php artisan config:cache`. |
+| Composer: "requires php >=8.4.1" | Wrong PHP. Install php8.4 (step 2) and run `update-alternatives --set php /usr/bin/php8.4`. |
+| `.env` changes have no effect | Config is cached. Run `sudo -u www-data php artisan config:cache`. |
+| PHP code changes have no effect | OPcache with `validate_timestamps=0`. Run `sudo systemctl reload php8.4-fpm`. |
+| CSS or JS looks old | Hard refresh. URLs carry `?v=<mtime>`, so a re-upload that kept the old mtimes won't bust the cache. Run `touch public/css/app.css public/js/*.js`. |
+| 502 Bad Gateway | The PHP-FPM socket path in the Nginx config is wrong (`ls /run/php/`), or php8.4-fpm isn't running. |
+| Locked out of the owner account | `sudo -u www-data php artisan user:password <email>` |
+
+---
+
+## License
+
+MIT
