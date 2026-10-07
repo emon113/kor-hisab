@@ -58,7 +58,7 @@ Anyone can use the calculators without an account. With an account, you can save
 
 | Layer | Choice |
 |---|---|
-| Language | **PHP 8.4.1 or newer** (required: the locked Symfony 8 components need ≥ 8.4.1) |
+| Language | **PHP 8.3 or newer**. `composer.json` sets `config.platform.php` to `8.3.0`, so `composer.lock` resolves to versions that run on 8.3 (Symfony 7.4 LTS). |
 | Framework | Laravel 13 |
 | Database | SQLite by default (WAL mode, busy timeout 5 s, set in `AppServiceProvider`). MySQL and PostgreSQL also work. |
 | Sessions, cache, rate limits | `database` driver (no Redis needed) |
@@ -191,7 +191,7 @@ Start from `.env.example`. The keys that matter:
 
 ## Local development
 
-Requirements: PHP ≥ 8.4.1 with `pdo_sqlite`, `mbstring`, `xml`, `curl`, `zip`, `intl`, `bcmath`, and Composer 2.
+Requirements: PHP ≥ 8.3 with `pdo_sqlite`, `mbstring`, `xml`, `curl`, `zip`, `intl`, `bcmath`, and Composer 2.
 
 ```bash
 composer install
@@ -255,7 +255,7 @@ cd /var/www/kor-hishab
 
 [`deploy.sh`](deploy.sh) runs these steps, with a progress bar, a live spinner and the full output in `storage/logs/deploy.log`:
 
-1. **Pre-flight:** checks PHP ≥ 8.4.1, refuses to run if tracked files were edited on the server or the branch has diverged, and lists the incoming commits. Nothing changes until these pass.
+1. **Pre-flight:** checks PHP ≥ 8.3, refuses to run if tracked files were edited on the server or the branch has diverged, and lists the incoming commits. Nothing changes until these pass.
 2. **Pull and Composer**, with the site still up.
 3. **Maintenance mode → SQLite backup → migrations → caches.** Backups go to `storage/app/backups/`, and the last 10 are kept.
 4. **Reload PHP-FPM**, which OPcache needs to pick up new code, then **bring the site up** and run a health check on `/up`.
@@ -265,7 +265,7 @@ If any step fails, the site is brought back out of maintenance mode and the back
 ## Target architecture
 
 ```
-Internet ──► Nginx :80/:443 (Let's Encrypt TLS) ──► PHP-FPM 8.4 (unix socket) ──► Laravel app
+Internet ──► Nginx :80/:443 (Let's Encrypt TLS) ──► PHP-FPM 8.3 (unix socket) ──► Laravel app
                                                                                   └─► SQLite file: /var/www/kor-hishab/database/database.sqlite
 ```
 
@@ -311,13 +311,11 @@ sudo apt-get update
 sudo apt-get install -y software-properties-common ca-certificates curl unzip git sqlite3 nginx ufw
 ```
 
-**PHP 8.4 is required** (≥ 8.4.1). Ubuntu 24.04 ships 8.3, which is **too old**. Use the ondrej PPA:
+**PHP 8.3 is required.** On **Ubuntu 24.04**, PHP 8.3 is in the standard packages, so you can install it directly. On **Ubuntu 22.04** (which ships 8.1), first add the ondrej PPA: `sudo add-apt-repository -y ppa:ondrej/php && sudo apt-get update`. On **Debian 12** (which ships 8.2), use packages.sury.org/php.
 
 ```bash
-sudo add-apt-repository -y ppa:ondrej/php     # Debian 12 instead: use packages.sury.org/php (see deb.sury.org instructions)
-sudo apt-get update
-sudo apt-get install -y php8.4-fpm php8.4-cli php8.4-sqlite3 php8.4-mbstring php8.4-xml \
-  php8.4-curl php8.4-zip php8.4-intl php8.4-bcmath php8.4-opcache
+sudo apt-get install -y php8.3-fpm php8.3-cli php8.3-sqlite3 php8.3-mbstring php8.3-xml \
+  php8.3-curl php8.3-zip php8.3-intl php8.3-bcmath php8.3-opcache
 ```
 
 Install Composer 2 if it is missing:
@@ -325,20 +323,20 @@ Install Composer 2 if it is missing:
 ```bash
 command -v composer || {
   curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
-  sudo php8.4 /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+  sudo php8.3 /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
   rm /tmp/composer-setup.php
 }
 ```
 
 **Verify:**
 ```bash
-php8.4 -v | head -1                       # PHP 8.4.x
-php8.4 -m | grep -E 'pdo_sqlite|mbstring|intl|bcmath|xml|curl|zip' | wc -l   # ≥ 7
+php8.3 -v | head -1                       # PHP 8.3.x
+php8.3 -m | grep -E 'pdo_sqlite|mbstring|intl|bcmath|xml|curl|zip' | wc -l   # ≥ 7
 composer --version                        # Composer 2.x
-systemctl is-active php8.4-fpm nginx      # active / active
+systemctl is-active php8.3-fpm nginx      # active / active
 ```
 
-If the default `php` CLI isn't 8.4, set it with `sudo update-alternatives --set php /usr/bin/php8.4`.
+If the default `php` CLI isn't 8.3, set it with `sudo update-alternatives --set php /usr/bin/php8.3`.
 
 ## Step 3 — Put the code in place
 
@@ -367,7 +365,7 @@ cd /var/www/kor-hishab
 composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 ```
 
-**Verify:** `test -f vendor/autoload.php && echo ok`. If Composer complains about the PHP version, step 2 did not install or select PHP 8.4.
+**Verify:** `test -f vendor/autoload.php && echo ok`. If Composer complains about the PHP version, step 2 did not install or select PHP 8.3.
 
 ## Step 5 — Environment file
 
@@ -435,7 +433,7 @@ sqlite3 database/database.sqlite "select count(*) from users;"   # ≥ 1
 
 ## Step 7 — Nginx site
 
-Find the PHP-FPM socket: `ls /run/php/` (normally `/run/php/php8.4-fpm.sock`).
+Find the PHP-FPM socket: `ls /run/php/` (normally `/run/php/php8.3-fpm.sock`).
 
 Write `/etc/nginx/sites-available/kor-hishab`. Replace `DOMAIN`, or use `_` / the server IP if there's no domain:
 
@@ -468,7 +466,7 @@ server {
     }
 
     location ~ ^/index\.php(/|$) {
-        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_hide_header X-Powered-By;
@@ -521,7 +519,7 @@ curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' http://$DOMAIN/   # 301
 
 ## Step 9 — PHP tuning (recommended)
 
-Create `/etc/php/8.4/fpm/conf.d/99-kor-hishab.ini`:
+Create `/etc/php/8.3/fpm/conf.d/99-kor-hishab.ini`:
 
 ```ini
 opcache.enable=1
@@ -532,10 +530,10 @@ expose_php=Off
 memory_limit=256M
 ```
 
-`validate_timestamps=0` means PHP code changes only take effect after `sudo systemctl reload php8.4-fpm`. The update procedure below already does this.
+`validate_timestamps=0` means PHP code changes only take effect after `sudo systemctl reload php8.3-fpm`. The update procedure below already does this.
 
 ```bash
-sudo systemctl reload php8.4-fpm
+sudo systemctl reload php8.3-fpm
 ```
 
 ## Step 10 — Backups (SQLite)
@@ -580,13 +578,13 @@ sudo chown -R "$USER":www-data . && sudo find storage bootstrap/cache database -
 sudo -u www-data php artisan migrate --force
 sudo -u www-data php artisan optimize:clear
 sudo -u www-data php artisan optimize
-sudo systemctl reload php8.4-fpm
+sudo systemctl reload php8.3-fpm
 
 sudo -u www-data php artisan up
 curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/up   # 200
 ```
 
-**Rollback:** check out the previous commit (or re-upload the previous files), restore `database/pre-deploy.sqlite` if a migration changed data, then run `composer install --no-dev`, `optimize`, `reload php8.4-fpm` and `up`.
+**Rollback:** check out the previous commit (or re-upload the previous files), restore `database/pre-deploy.sqlite` if a migration changed data, then run `composer install --no-dev`, `optimize`, `reload php8.3-fpm` and `up`.
 
 ## Troubleshooting
 
@@ -595,11 +593,11 @@ curl -s -o /dev/null -w '%{http_code}\n' https://$DOMAIN/up   # 200
 | **500 error**, blank page | Check `storage/logs/laravel.log`. Usually permissions: re-run the `chown`/`chmod` lines from step 6. |
 | `attempt to write a readonly database` / `unable to open database file` | The **`database/` directory** (not just the file) must be writable by `www-data`, because of WAL. Re-run the `chown`/`chmod` lines from step 6. |
 | **419 Page Expired** on login or save | `SESSION_SECURE_COOKIE=true` while serving HTTP, or `APP_URL` doesn't match the domain. Fix `.env`, then run `sudo -u www-data php artisan config:cache`. |
-| Composer: "requires php >=8.4.1" | Wrong PHP. Install php8.4 (step 2) and run `update-alternatives --set php /usr/bin/php8.4`. |
+| Composer: "requires php >=8.3" | Wrong PHP. Install php8.3 (step 2) and run `update-alternatives --set php /usr/bin/php8.3`. |
 | `.env` changes have no effect | Config is cached. Run `sudo -u www-data php artisan config:cache`. |
-| PHP code changes have no effect | OPcache with `validate_timestamps=0`. Run `sudo systemctl reload php8.4-fpm`. |
+| PHP code changes have no effect | OPcache with `validate_timestamps=0`. Run `sudo systemctl reload php8.3-fpm`. |
 | CSS or JS looks old | Hard refresh. URLs carry `?v=<mtime>`, so a re-upload that kept the old mtimes won't bust the cache. Run `touch public/css/app.css public/js/*.js`. |
-| 502 Bad Gateway | The PHP-FPM socket path in the Nginx config is wrong (`ls /run/php/`), or php8.4-fpm isn't running. |
+| 502 Bad Gateway | The PHP-FPM socket path in the Nginx config is wrong (`ls /run/php/`), or php8.3-fpm isn't running. |
 | Locked out of the owner account | `sudo -u www-data php artisan user:password <email>` |
 
 ---

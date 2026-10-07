@@ -6,7 +6,7 @@
 #   cd /var/www/kor-hishab
 #   ./deploy.sh
 #
-# First-time server setup (PHP 8.4, Nginx, .env, HTTPS) is described in
+# First-time server setup (PHP 8.3, Nginx, .env, HTTPS) is described in
 # README.md → "Deploying to a VPS". This script is the everyday part: ship
 # whatever is on GitHub with as little downtime as possible.
 #
@@ -136,10 +136,10 @@ step "Pre-flight"
 [[ -f artisan ]] || die "No artisan here — run this from the application root."
 [[ -f .env ]] || die "No .env — do the first-time setup in README.md first."
 
-# Laravel 13 pulls in Symfony 8, which needs PHP ≥ 8.4.1. Ubuntu 24.04's apt
-# PHP is 8.3 and Composer's error for that is long and unhelpful.
-php -r 'exit(version_compare(PHP_VERSION, "8.4.1", ">=") ? 0 : 1);' \
-    || die "PHP $(php -r 'echo PHP_VERSION;') is too old — Kor Hishab needs PHP ≥ 8.4.1."
+# composer.lock is resolved for PHP 8.3 (config.platform.php in composer.json).
+# Older PHP fails inside Composer with an error that is long and unhelpful.
+php -r 'exit(version_compare(PHP_VERSION, "8.3.0", ">=") ? 0 : 1);' \
+    || die "PHP $(php -r 'echo PHP_VERSION;') is too old — Kor Hishab needs PHP ≥ 8.3."
 
 # Edited files on the server: stop rather than discard someone's work.
 # (Untracked files are fine — the SQLite database and .env are untracked.)
