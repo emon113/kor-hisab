@@ -83,7 +83,7 @@
                         <summary class="avatar" aria-label="{{ __('Account menu') }}">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</summary>
                         <div class="menu-panel">
                             <p class="menu-who"><strong>{{ auth()->user()->name }}</strong><span>{{ auth()->user()->email }}</span></p>
-                            <a href="{{ route('account') }}"><x-icon name="user" size="16" /> {{ __('Account') }}</a>
+                            <a href="{{ route('account') }}"><x-icon name="settings" size="16" /> {{ __('Settings') }}</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"><x-icon name="logout" size="16" /> {{ __('Sign out') }}</button>
@@ -126,6 +126,12 @@
 
     @if (session('status'))
         <script>window.__flash = @json(session('status'));</script>
+    @endif
+    @if (session('sync_display'))
+        <script>
+            // Settings saved on the account: copy them to this browser so JS formatting matches.
+            (function (prefs) { try { Object.keys(prefs).forEach(function (k) { localStorage.setItem('kh:' + k, prefs[k]); }); } catch (e) {} })(@json(session('sync_display')));
+        </script>
     @endif
     @if ($locale !== 'en')
         <script src="{{ route('lang.script', $locale) }}?v={{ @filemtime(lang_path($locale.'.json')) }}"></script>

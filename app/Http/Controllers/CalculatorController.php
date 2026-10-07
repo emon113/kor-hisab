@@ -7,6 +7,7 @@ use App\Models\Calculation;
 use App\Services\Tax\TaxReport;
 use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,10 +41,11 @@ class CalculatorController extends Controller
     {
         Money::useGrouping($request->cookie('kh_grouping'));
 
-        $input = $calculation?->inputs ?? [
+        // A new calculation starts from the user's tax profile (and salary, if saved).
+        $profile = TaxProfile::for($request->user());
+        $input = $calculation?->inputs ?? $profile->taxInput() + [
             'year' => config('tax.default_year'),
-            'category' => 'general',
-            'gross_income' => 1200000,
+            'gross_income' => $profile->package()['gross'] ?? 1200000,
             'investments' => ['dps' => 60000],
             'tds_paid' => 0,
             'filing' => 'standard',

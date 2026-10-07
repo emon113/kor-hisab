@@ -56,4 +56,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'edit'])->name('account');
     Route::put('/account', [AccountController::class, 'update'])->name('account.update');
     Route::put('/account/password', [AccountController::class, 'password'])->name('account.password');
+    Route::put('/account/tax', [AccountController::class, 'tax'])->name('account.tax');
+    Route::put('/account/display', [AccountController::class, 'display'])->name('account.display');
 });

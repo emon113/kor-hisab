@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Tax\TaxEngine;
 use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxProfile;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,6 +37,7 @@ class FilingCheckController extends Controller
             'checkedAt' => Money::digits(Carbon::parse($check['checked_at'])->translatedFormat('j F Y')),
             'boot' => [
                 'yearLabel' => Lang::label(config("tax.years.{$year}.label")),
+                'category' => TaxProfile::for($request->user())->get('category'),
                 'categories' => $categories,
                 'obligations' => $this->translate($check['obligations'], ['question', 'hint', 'reason']),
                 'psr' => $this->translate($check['psr_services'], ['service']),

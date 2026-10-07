@@ -7,7 +7,7 @@ document.addEventListener('alpine:init', () => {
         tinOnly: boot.tinOnly,
         steps: boot.steps,
         routes: boot.routes,
-        category: 'general',
+        category: boot.category || 'general',
         income: 0,
         incomeKnown: false,
         answers: Object.fromEntries(boot.obligations.map((o) => [o.id, null])),

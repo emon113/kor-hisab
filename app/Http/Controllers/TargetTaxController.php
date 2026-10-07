@@ -6,6 +6,7 @@ use App\Http\Requests\TargetTaxRequest;
 use App\Services\Tax\TargetTaxSolver;
 use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,7 +31,7 @@ class TargetTaxController extends Controller
             'rebate_mode' => 'none',
             'investment' => 0,
             'year' => config('tax.default_year'),
-            'category' => 'general',
+            'category' => TaxProfile::for($request->user())->get('category'),
             'ratios' => $ratios,
         ];
 

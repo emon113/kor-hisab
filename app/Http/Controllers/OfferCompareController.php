@@ -6,6 +6,7 @@ use App\Http\Requests\OfferCompareRequest;
 use App\Services\Tax\OfferComparer;
 use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,13 +19,15 @@ class OfferCompareController extends Controller
     {
         Money::useGrouping($request->cookie('kh_grouping'));
 
+        $profile = TaxProfile::for($request->user());
         $input = [
             'year' => config('tax.default_year'),
-            'category' => 'general',
+            'category' => $profile->get('category'),
             'investment_mode' => 'none',
             'investment' => 0,
             'offers' => [
-                ['name' => __('Current job'), 'monthly' => 100000, 'basic_pct' => 60, 'bonus_count' => 2, 'bonus_base' => 'basic', 'other_annual' => 0, 'employer_pf' => 6000],
+                $profile->offer(__('Current job'))
+                    ?? ['name' => __('Current job'), 'monthly' => 100000, 'basic_pct' => 60, 'bonus_count' => 2, 'bonus_base' => 'basic', 'other_annual' => 0, 'employer_pf' => 6000],
                 ['name' => __('New offer'), 'monthly' => 120000, 'basic_pct' => 50, 'bonus_count' => 2, 'bonus_base' => 'basic', 'other_annual' => 0, 'employer_pf' => 0],
             ],
         ];

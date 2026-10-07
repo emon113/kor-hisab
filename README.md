@@ -81,6 +81,12 @@ Anyone can use the calculators without an account. With an account, you can save
 - **Account page:** change your name, email and password.
 - There is no email or password-reset flow, so no mail server is needed. An admin resets passwords from the command line (see [Admin and maintenance commands](#admin-and-maintenance-commands)).
 
+### Settings and tax profile (`/account`, signed in)
+- **Tax profile:** category (shown as cards with each tax-free limit), disabled children and first-return status. Every calculator, planner and checker starts from it, and the user can still change anything on the page.
+- **Salary profile (optional):** monthly salary, basic share, festival bonuses and employer PF. It pre-fills the calculator, the TDS planner (salary and bonus months) and the "Current job" offer. `App\Services\Tax\SalaryPackage` does the monthly-to-yearly maths for all of them.
+- **Display:** language, digits and number style are saved with the account and applied on any device at sign-in.
+- One place reads all of this: `App\Support\TaxProfile::for($user)`, which falls back to defaults for guests. Stored in `users.preferences` (json).
+
 ### Security notes
 - The server recalculates every saved figure from the inputs. Numbers sent from the browser are never trusted.
 - Users can only see their own calculations. Other users' calculations return a 404.
@@ -193,7 +199,8 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET | `/wealth` | ✓ | Assets and liabilities, all years |
 | GET / PUT / DELETE | `/wealth/{year}` | ✓ | Edit / save (JSON) / delete one year's statement, e.g. `2026-27` |
 | GET | `/wealth/{year}/print` | ✓ | Print view in IT-10B order |
-| GET / PUT | `/account`, `/account/password` | ✓ | Profile / password |
+| GET / PUT | `/account`, `/account/password` | ✓ | Settings page / account details / password |
+| PUT | `/account/tax`, `/account/display` | ✓ | Save tax & salary profile / display settings |
 | GET | `/lang/bn.js` | – | Bangla strings for browser-side text (cached) |
 | GET | `/up` | – | Health check (HTTP 200 when the app boots) |
 
@@ -203,7 +210,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 
 | Table | Notes |
 |---|---|
-| `users` | Standard Laravel users plus `salary_ratios` (json, nullable) |
+| `users` | Standard Laravel users plus `salary_ratios` and `preferences` (json, nullable; tax, salary and display settings) |
 | `calculations` | `user_id` (cascade delete), `title`, `notes`, `tax_year`, `category`, `gross_income`, `liability`, `payable`, `effective_rate`, `inputs` (json), `summary` (json). Indexed on (`user_id`, `updated_at`). |
 | `wealth_statements` | `user_id` (cascade delete), `tax_year` (unique per user), `opening_net_wealth` (only for a first statement), `receipts`, `expenses`, `liabilities`, `assets` (json, one amount per form line), `notes`. |
 | `sessions`, `cache`, `cache_locks` | Database session, cache and rate-limiter storage |

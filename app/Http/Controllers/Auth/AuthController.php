@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\TaxProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -45,8 +46,12 @@ class AuthController extends Controller
 
         RateLimiter::clear($key);
         $request->session()->regenerate();
+        $profile = TaxProfile::for($request->user());
 
+        // Bring the account's language and number settings to this device.
         return redirect()->intended(route('home'))
+            ->withCookies($profile->displayCookies())
+            ->with('sync_display', $profile->displaySync())
             ->with('status', __('Signed in. Welcome back, :name.', ['name' => $request->user()->firstName()]));
     }
 

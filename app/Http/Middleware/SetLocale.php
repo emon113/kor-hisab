@@ -27,14 +27,17 @@ class SetLocale
                 ->withCookie(cookie()->forever('kh_locale', $requested));
         }
 
-        $locale = $request->cookie('kh_locale');
+        // Cookie first (this device), then the signed-in user's saved choice, then APP_LOCALE.
+        $prefs = $request->user()?->preferences ?? [];
+        $locale = $request->cookie('kh_locale') ?: ($prefs['locale'] ?? null);
         if (! in_array($locale, self::LOCALES, true)) {
             $locale = in_array(config('app.locale'), self::LOCALES, true) ? config('app.locale') : 'en';
         }
 
         App::setLocale($locale);
         Carbon::setLocale($locale);
-        Money::useDigits($locale === 'bn' && $request->cookie('kh_digits') !== 'latin' ? 'bn' : 'latin');
+        $digits = $request->cookie('kh_digits') ?: ($prefs['digits'] ?? null);
+        Money::useDigits($locale === 'bn' && $digits !== 'latin' ? 'bn' : 'latin');
 
         return $next($request);
     }

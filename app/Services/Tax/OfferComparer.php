@@ -15,7 +15,7 @@ final class OfferComparer
 {
     public const MODES = ['none', 'same', 'max'];
 
-    public const BONUS_BASES = ['basic', 'gross'];
+    public const BONUS_BASES = SalaryPackage::BONUS_BASES;
 
     public function __construct(private readonly TaxEngine $engine) {}
 
@@ -61,17 +61,9 @@ final class OfferComparer
 
     private function offer(array $offer, int $index, array $ctx, string $mode, float $investment): array
     {
-        $monthly = max(0.0, round((float) ($offer['monthly'] ?? 0)));
-        $basicPct = min(100.0, max(1.0, (float) ($offer['basic_pct'] ?? 60)));
-        $basic = round($monthly * $basicPct / 100);
-        $bonusCount = min(12.0, max(0.0, (float) ($offer['bonus_count'] ?? 0)));
-        $bonusBase = in_array($offer['bonus_base'] ?? '', self::BONUS_BASES, true) ? $offer['bonus_base'] : 'basic';
-        $bonuses = round($bonusCount * ($bonusBase === 'basic' ? $basic : $monthly));
-        $other = max(0.0, round((float) ($offer['other_annual'] ?? 0)));
-        $pf = max(0.0, round((float) ($offer['employer_pf'] ?? 0))) * 12;
-
-        $cash = $monthly * 12 + $bonuses + $other;
-        $gross = $cash + $pf;   // what Schedule 1 counts as salary
+        $pkg = SalaryPackage::annual($offer);
+        $gross = $pkg['gross'];
+        $cash = $pkg['cash'];
 
         $needed = ceil($this->engine->core($gross, 0, $ctx)['investment_needed']);
         $eligible = match ($mode) {
@@ -85,12 +77,12 @@ final class OfferComparer
         return [
             'index' => $index,
             'name' => trim((string) ($offer['name'] ?? '')) ?: chr(65 + $index),
-            'monthly' => $monthly,
-            'basic_monthly' => $basic,
-            'allowances_monthly' => $monthly - $basic,
-            'bonuses' => $bonuses,
-            'other' => $other,
-            'employer_pf' => $pf,
+            'monthly' => $pkg['monthly'],
+            'basic_monthly' => $pkg['basic_monthly'],
+            'allowances_monthly' => $pkg['allowances_monthly'],
+            'bonuses' => $pkg['bonuses'],
+            'other' => $pkg['other'],
+            'employer_pf' => $pkg['employer_pf'],
             'gross' => $gross,
             'taxable' => round($core['taxable']),
             'investment' => $eligible,
@@ -99,7 +91,7 @@ final class OfferComparer
             'tax' => $tax,
             'take_home_annual' => $cash - $tax,
             'take_home_monthly' => round(($cash - $tax) / 12),
-            'total_value' => $cash - $tax + $pf,
+            'total_value' => $cash - $tax + $pkg['employer_pf'],
             'effective_rate' => $gross > 0 ? round($tax / $gross, 6) : 0.0,
             'marginal_rate' => $this->engine->marginalRate($core['taxable'], $ctx),
         ];

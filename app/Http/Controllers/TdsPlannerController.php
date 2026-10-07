@@ -6,6 +6,7 @@ use App\Http\Requests\TdsPlanRequest;
 use App\Services\Tax\TdsPlanner;
 use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxProfile;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Http\JsonResponse;
@@ -23,12 +24,20 @@ class TdsPlannerController extends Controller
         $year = $this->planner->currentYear($today);
         $done = $this->planner->defaultDone($year, $today);
 
-        // A worked example: ৳1,00,000 a month with two festival bonuses of one month's basic.
+        // The user's salary profile, or a worked example: ৳1,00,000 a month with two bonuses of one month's basic.
+        $profile = TaxProfile::for($request->user());
+        $pkg = $profile->package() ?? ['monthly' => 100000, 'bonus_each' => 55000];
+        $bonusMonths = $this->bonusMonths($profile->hasSalary() ? (int) round($profile->get('bonus_count')) : 2);
         $months = [];
-        foreach (TdsPlanner::MONTHS as $key) {
-            $months[$key] = ['salary' => 100000, 'bonus' => in_array($key, ['mar', 'jun'], true) ? 55000 : 0, 'tds' => $done[$key] ? 4000 : 0, 'done' => $done[$key]];
+        foreach (TdsPlanner::MONTHS as $i => $key) {
+            $months[$key] = [
+                'salary' => $pkg['monthly'],
+                'bonus' => in_array($i, $bonusMonths, true) ? $pkg['bonus_each'] : 0,
+                'tds' => $done[$key] && ! $profile->hasSalary() ? 4000 : 0,
+                'done' => $done[$key],
+            ];
         }
-        $input = ['year' => $year, 'category' => 'general', 'investment' => 0, 'months' => $months];
+        $input = ['year' => $year, 'investment' => 0, 'months' => $months] + $profile->taxInput();
 
         $rules = config('tax');
 
@@ -44,6 +53,17 @@ class TdsPlannerController extends Controller
                 'routes' => ['plan' => route('tds.plan'), 'calculator' => route('home')],
             ],
         ]);
+    }
+
+    /** Spread n bonuses across the year as a starting point; the user moves them to the real months. */
+    private function bonusMonths(int $count): array
+    {
+        $count = max(0, min(12, $count));
+        if ($count === 0) {
+            return [];   // range(0, -1) would count down, not return nothing
+        }
+
+        return array_map(fn ($i) => intdiv(($i + 1) * 12, $count + 1) - 1, range(0, $count - 1));
     }
 
     public function plan(TdsPlanRequest $request): JsonResponse
