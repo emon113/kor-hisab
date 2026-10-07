@@ -40,9 +40,13 @@
                 <a href="{{ route('target') }}" @class(['active' => request()->routeIs('target')])>
                     <x-icon name="target" size="18" /> <span>{{ __('Target tax') }}</span>
                 </a>
-                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds')])>
+                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds', 'filing-check')])>
                     <summary><x-icon name="tools" size="18" /> <span>{{ __('Tools') }}</span> <x-icon name="chevron" size="14" class="hide-sm" /></summary>
                     <div class="menu-panel">
+                        <a href="{{ route('filing-check') }}" @class(['tool', 'active' => request()->routeIs('filing-check')])>
+                            <x-icon name="help" size="18" />
+                            <span><b>{{ __('Do I need to file?') }}</b><small>{{ __('Check the legal conditions in a minute') }}</small></span>
+                        </a>
                         <a href="{{ route('tds') }}" @class(['tool', 'active' => request()->routeIs('tds')])>
                             <x-icon name="calendar" size="18" />
                             <span><b>{{ __('Monthly TDS planner') }}</b><small>{{ __('How much tax to deduct each month, so June has no surprise') }}</small></span>

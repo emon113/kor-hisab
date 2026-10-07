@@ -59,6 +59,11 @@ Anyone can use the calculators without an account. With an account, you can save
 - Shows whether deductions are on track, behind or ahead of the tax due on income earned so far, a cumulative chart, and a ready-to-send message for HR.
 - Defaults to the income year that contains today, with past months ticked. Inputs are kept as a draft in the browser. Logic in `app/Services/Tax/TdsPlanner.php`.
 
+### "Do I need to file a return?" (`/must-i-file`)
+- A short questionnaire on the section 166 conditions of the Income Tax Act 2023: income above the tax-free limit (computed per category from `config/tax.php`), assessed in the last three years, company employee or shareholder director, government employee, executive post, partner, exempt or reduced-rate income. One "yes" makes filing compulsory, and the page says which rule applies.
+- Lists common services that ask for proof of return submission (PSR), and those where a TIN is enough since the Finance Ordinance 2025. People not required to file are exempt from PSR.
+- Rules, sources and the date they were checked live in `config/filing_check.php`. The rules are evaluated in the browser; the salary at which tax starts comes from `TaxEngine`.
+
 ### Assets and liabilities statement (`/wealth`, signed in)
 - A year-by-year working copy of NBR's **IT-10B (2023)** statement of assets and liabilities and **IT-10BB (2023)** lifestyle expenses, with the form's serial numbers.
 - A new year starts from last year's assets and liabilities, and takes income and TDS from that year's saved calculation.
@@ -172,6 +177,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET | `/calculations/compare?a=&b=` | ✓ | Compare two |
 | GET | `/return-guide` | – | Return form guide (calculator inputs in the query string) |
 | GET | `/tds-planner` | – | Monthly TDS planner |
+| GET | `/must-i-file` | – | Return filing checker |
 | POST | `/tds-planner/plan` | – | JSON plan (throttle 240/min) |
 | GET | `/calculations/{id}/return-guide` | ✓ | Return form guide for a saved calculation |
 | POST | `/calculations` | ✓ | Save (JSON) |
