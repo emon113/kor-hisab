@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TargetTaxRequest;
 use App\Services\Tax\TargetTaxSolver;
+use App\Support\Lang;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,10 +40,10 @@ class TargetTaxController extends Controller
                 'input' => $input,
                 'result' => $this->solver->solve($input),
                 'defaults' => collect($components)->map(fn ($c) => round($c['ratio'] * 100, 4))->all(),
-                'labels' => collect($components)->map(fn ($c) => $c['label'])->all(),
+                'labels' => collect($components)->map(fn ($c) => __($c['label']))->all(),
                 'options' => [
-                    'years' => collect(config('tax.years'))->map(fn ($y, $k) => ['key' => $k, 'label' => $y['label']])->values(),
-                    'categories' => collect(config('tax.categories'))->map(fn ($l, $k) => ['key' => $k, 'label' => $l])->values(),
+                    'years' => collect(config('tax.years'))->map(fn ($y, $k) => ['key' => $k, 'label' => Lang::label($y['label'])])->values(),
+                    'categories' => collect(config('tax.categories'))->map(fn ($l, $k) => ['key' => $k, 'label' => __($l)])->values(),
                 ],
                 'routes' => [
                     'solve' => route('target.solve'),
@@ -69,6 +70,6 @@ class TargetTaxController extends Controller
 
         $request->user()->update(['salary_ratios' => array_map('floatval', $data['ratios'])]);
 
-        return response()->json(['message' => 'Saved as your default salary split.']);
+        return response()->json(['message' => __('Saved as your default salary split.')]);
     }
 }

@@ -31,7 +31,7 @@ document.addEventListener('alpine:init', () => {
         },
         resetRatios() {
             this.form.ratios = { ...this.defaults };
-            KH.toast('Salary split reset to the default ratios.');
+            KH.toast(KH.t('Salary split reset to the default ratios.'));
         },
         async saveRatios() {
             try {
@@ -44,9 +44,9 @@ document.addEventListener('alpine:init', () => {
         async copy() {
             try {
                 await navigator.clipboard.writeText(this.result.copy_text);
-                KH.toast('Breakdown copied.');
+                KH.toast(KH.t('Breakdown copied.'));
             } catch (e) {
-                KH.toast('Copy failed. Select the text and copy it manually.', 'error');
+                KH.toast(KH.t('Copy failed. Select the text and copy it manually.'), 'error');
             }
         },
 
@@ -88,11 +88,11 @@ document.addEventListener('alpine:init', () => {
                 type: 'bar',
                 data: {
                     labels: comps.map((c) => c.label),
-                    datasets: [{ label: 'Per month', data: comps.map((c) => c.monthly), backgroundColor: palette, borderRadius: 6, maxBarThickness: 26 }],
+                    datasets: [{ label: KH.t('Per month'), data: comps.map((c) => c.monthly), backgroundColor: palette, borderRadius: 6, maxBarThickness: 26 }],
                 },
                 options: {
                     indexAxis: 'y',
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + KH.bdt(c.parsed.x) + ' a month' } } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + KH.t(':amount a month', { amount: KH.bdt(c.parsed.x) }) } } },
                     scales: { x: KH.axisMoney({ beginAtZero: true }), y: { grid: { display: false } } },
                 },
             });
@@ -103,15 +103,15 @@ document.addEventListener('alpine:init', () => {
                 type: 'line',
                 data: {
                     datasets: [
-                        { label: 'Tax', data: curve.map((p) => ({ x: p.income, y: p.tax })), borderColor: KH.css('--red'), backgroundColor: KH.css('--red'), pointRadius: 0, borderWidth: 2.5, tension: 0 },
-                        { label: 'Your target', data: [{ x: 0, y: target }, { x: curve[curve.length - 1].income, y: target }], borderColor: KH.css('--muted'), backgroundColor: KH.css('--muted'), borderDash: [6, 5], pointRadius: 0, borderWidth: 1.5 },
-                        { type: 'scatter', label: 'Required income', data: [{ x: this.result.gross, y: target }], backgroundColor: KH.css('--green'), borderColor: KH.css('--surface'), borderWidth: 2, pointRadius: 8 },
+                        { label: KH.t('Tax'), data: curve.map((p) => ({ x: p.income, y: p.tax })), borderColor: KH.css('--red'), backgroundColor: KH.css('--red'), pointRadius: 0, borderWidth: 2.5, tension: 0 },
+                        { label: KH.t('Your target'), data: [{ x: 0, y: target }, { x: curve[curve.length - 1].income, y: target }], borderColor: KH.css('--muted'), backgroundColor: KH.css('--muted'), borderDash: [6, 5], pointRadius: 0, borderWidth: 1.5 },
+                        { type: 'scatter', label: KH.t('Required income'), data: [{ x: this.result.gross, y: target }], backgroundColor: KH.css('--green'), borderColor: KH.css('--surface'), borderWidth: 2, pointRadius: 8 },
                     ],
                 },
                 options: {
                     parsing: false,
                     interaction: { mode: 'nearest', axis: 'x', intersect: false },
-                    plugins: { tooltip: { callbacks: { title: (items) => 'Income ' + KH.bdt(items[0].parsed.x), label: (c) => ' ' + c.dataset.label + ': ' + KH.bdt(c.parsed.y) } } },
+                    plugins: { tooltip: { callbacks: { title: (items) => KH.t('Income :amount', { amount: KH.bdt(items[0].parsed.x) }), label: (c) => ' ' + c.dataset.label + ': ' + KH.bdt(c.parsed.y) } } },
                     scales: {
                         y: KH.axisMoney({ beginAtZero: true }),
                         x: { type: 'linear', min: 0, max: curve[curve.length - 1].income, ticks: { callback: (v) => KH.short(v), maxTicksLimit: 8 }, grid: { display: false } },

@@ -30,7 +30,7 @@ document.addEventListener('alpine:init', () => {
                 const draft = KH.draft.load();
                 if (draft && this.signature(draft) !== this.snapshot) {
                     this.form = { ...this.form, ...draft, investments: { ...this.form.investments, ...(draft.investments || {}) } };
-                    this.$nextTick(() => KH.toast('Your last numbers are back.'));
+                    this.$nextTick(() => KH.toast(KH.t('Your last numbers are back.')));
                     this.queue(0);
                 }
             }
@@ -83,23 +83,23 @@ document.addEventListener('alpine:init', () => {
         },
         get incomeHint() {
             return this.incomeMode === 'monthly'
-                ? 'That is ' + KH.bdt(this.form.gross_income) + ' a year, including bonuses spread across the months.'
-                : 'Everything in your salary for the year: basic, allowances, bonuses and employer PF.';
+                ? KH.t('That is :amount a year, including bonuses spread across the months.', { amount: KH.bdt(this.form.gross_income) })
+                : KH.t('Everything in your salary for the year: basic, allowances, bonuses and employer PF.');
         },
         meter(inst) {
             const amount = Number(this.form.investments[inst.key] || 0);
-            if (!inst.cap) return { width: 0, over: false, text: amount ? 'No limit, all of it counts' : 'No limit' };
+            if (!inst.cap) return { width: 0, over: false, text: amount ? KH.t('No limit, all of it counts') : KH.t('No limit') };
             const over = amount > inst.cap;
             return {
                 width: Math.min(100, (amount / inst.cap) * 100),
                 over,
-                text: over ? KH.bdt(amount - inst.cap) + ' above the ' + KH.bdt(inst.cap) + ' limit won’t count'
-                    : (amount ? KH.bdt(inst.cap - amount) + ' room left of ' + KH.bdt(inst.cap) : 'Up to ' + KH.bdt(inst.cap)),
+                text: over ? KH.t(':over above the :cap limit won’t count', { over: KH.bdt(amount - inst.cap), cap: KH.bdt(inst.cap) })
+                    : (amount ? KH.t(':room room left of :cap', { room: KH.bdt(inst.cap - amount), cap: KH.bdt(inst.cap) }) : KH.t('Up to :cap', { cap: KH.bdt(inst.cap) })),
             };
         },
         applyPlan() {
             this.inv.plan.forEach((p) => { this.form.investments[p.key] = Number(this.form.investments[p.key] || 0) + p.add; });
-            KH.toast('Added ' + KH.bdt(this.inv.gap) + ' to your investments.');
+            KH.toast(KH.t('Added :amount to your investments.', { amount: KH.bdt(this.inv.gap) }));
         },
 
         /* ---------- server round-trip ---------- */
@@ -129,12 +129,12 @@ document.addEventListener('alpine:init', () => {
         /* ---------- saving ---------- */
         openSave() {
             if (!this.auth) { this.$refs.authDialog.showModal(); return; }
-            this.saveTitle = this.calculation?.title || ('Salary ' + this.yearLabel + ', ' + KH.bdt(this.form.gross_income));
+            this.saveTitle = this.calculation?.title || KH.t('Salary :year, :amount', { year: this.yearLabel, amount: KH.bdt(this.form.gross_income) });
             this.$refs.saveDialog.showModal();
             this.$nextTick(() => this.$refs.titleInput?.select());
         },
         async save(asNew = false) {
-            if (!this.saveTitle.trim()) { KH.toast('Give it a name so you can find it later.', 'error'); return; }
+            if (!this.saveTitle.trim()) { KH.toast(KH.t('Give it a name so you can find it later.'), 'error'); return; }
             this.saving = true;
             const updating = this.calculation && !asNew;
             try {
@@ -155,8 +155,8 @@ document.addEventListener('alpine:init', () => {
             }
         },
         get saveLabel() {
-            if (!this.calculation) return 'Save calculation';
-            return this.dirty ? 'Save changes' : 'Saved';
+            if (!this.calculation) return KH.t('Save calculation');
+            return this.dirty ? KH.t('Save changes') : KH.t('Saved');
         },
 
         /* ---------- derived view data ---------- */
@@ -167,17 +167,17 @@ document.addEventListener('alpine:init', () => {
             return this.options.years.find((y) => y.key === this.form.year) || {};
         },
         get lede() {
-            return 'For ' + this.report.rules.label + ' (income ' + this.report.rules.income_year + '), your income tax is';
+            return KH.t('For :year (income :period), your income tax is', { year: this.report.rules.label, period: this.report.rules.income_year });
         },
         get verdictSub() {
             const s = this.s;
-            if (s.gross <= 0) return 'Enter your gross income to see your tax.';
+            if (s.gross <= 0) return KH.t('Enter your gross income to see your tax.');
             if (s.liability <= 0) {
-                return 'Your taxable income is within the tax-free limit of <strong>' + KH.bdt(s.threshold) + '</strong>. You keep all <strong>'
-                    + KH.bdt(s.take_home_monthly) + '</strong> a month.';
+                return KH.t('Your taxable income is within the tax-free limit of <strong>:limit</strong>. You keep all <strong>:monthly</strong> a month.',
+                    { limit: KH.bdt(s.threshold), monthly: KH.bdt(s.take_home_monthly) });
             }
-            return 'That is <strong>' + KH.pct(s.effective_rate) + '</strong> of your gross income, or <strong>' + KH.bdt(s.monthly_tax)
-                + '</strong> a month. You keep <strong>' + KH.bdt(s.take_home_monthly) + '</strong> a month.';
+            return KH.t('That is <strong>:rate</strong> of your gross income, or <strong>:tax</strong> a month. You keep <strong>:monthly</strong> a month.',
+                { rate: KH.pct(s.effective_rate), tax: KH.bdt(s.monthly_tax), monthly: KH.bdt(s.take_home_monthly) });
         },
         get ribbon() {
             const parts = this.report.charts.income_split;
@@ -191,7 +191,7 @@ document.addEventListener('alpine:init', () => {
                     basis: (share * 100).toFixed(3) + '%',
                     color: p.rate === null ? 'var(--exempt)' : KH.slabVar(p.rate),
                     light: p.rate !== null && p.rate >= 0.25,
-                    title: p.rate === null ? '⅓ tax-free' : (p.rate === 0 ? 'Tax-free' : KH.pct(p.rate, 0)),
+                    title: p.rate === null ? KH.t('⅓ tax-free') : (p.rate === 0 ? KH.t('Tax-free') : KH.pct(p.rate, 0)),
                     label: p.label,
                     amount: p.value,
                     tax: p.rate ? p.value * p.rate : 0,
@@ -203,6 +203,9 @@ document.addEventListener('alpine:init', () => {
             return this.report.slabs.reduce((a, r) => ({ amount: a.amount + r.amount, tax: a.tax + r.tax }), { amount: 0, tax: 0 });
         },
         get heat() { return this.report.charts.heatmap; },
+        raiseLabel(raise) {
+            return raise === 0 ? KH.t('Today') : '+' + KH.num(Math.round(raise * 100)) + '%';
+        },
 
         /* ---------- charts ---------- */
         renderCharts() {
@@ -219,10 +222,10 @@ document.addEventListener('alpine:init', () => {
                 type: 'bar',
                 data: {
                     labels: r.slabs.map((s) => KH.pct(s.rate, 0)),
-                    datasets: [{ label: 'Tax', data: r.slabs.map((s) => s.tax), backgroundColor: r.slabs.map((s) => KH.slabColor(s.rate)), borderRadius: 6, maxBarThickness: 46 }],
+                    datasets: [{ label: KH.t('Tax'), data: r.slabs.map((s) => s.tax), backgroundColor: r.slabs.map((s) => KH.slabColor(s.rate)), borderRadius: 6, maxBarThickness: 46 }],
                 },
                 options: {
-                    plugins: { legend: { display: false }, tooltip: KH.tooltipMoney('Tax') },
+                    plugins: { legend: { display: false }, tooltip: KH.tooltipMoney(KH.t('Tax')) },
                     scales: { y: KH.axisMoney({ beginAtZero: true }), x: { grid: { display: false } } },
                 },
             });
@@ -234,14 +237,14 @@ document.addEventListener('alpine:init', () => {
                 data: {
                     labels: curve.map((p) => p.investment),
                     datasets: [
-                        { label: 'Rebate', data: curve.map((p) => p.rebate), borderColor: green, backgroundColor: green, tension: 0, pointRadius: 0, borderWidth: 2.5 },
-                        { label: 'Tax payable', data: curve.map((p) => p.tax), borderColor: red, backgroundColor: red, tension: 0, pointRadius: 0, borderWidth: 2.5 },
+                        { label: KH.t('Rebate'), data: curve.map((p) => p.rebate), borderColor: green, backgroundColor: green, tension: 0, pointRadius: 0, borderWidth: 2.5 },
+                        { label: KH.t('Tax payable'), data: curve.map((p) => p.tax), borderColor: red, backgroundColor: red, tension: 0, pointRadius: 0, borderWidth: 2.5 },
                     ],
                 },
                 options: {
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        tooltip: { callbacks: { title: (items) => 'Investing ' + KH.bdt(items[0].label), label: (c) => ' ' + c.dataset.label + ': ' + KH.bdt(c.parsed.y) } },
+                        tooltip: { callbacks: { title: (items) => KH.t('Investing :amount', { amount: KH.bdt(items[0].label) }), label: (c) => ' ' + c.dataset.label + ': ' + KH.bdt(c.parsed.y) } },
                     },
                     scales: { y: KH.axisMoney({ beginAtZero: true }), x: { ticks: { callback: function (v) { return KH.short(this.getLabelForValue(v)); }, maxTicksLimit: 6 }, grid: { display: false } } },
                 },
@@ -252,18 +255,18 @@ document.addEventListener('alpine:init', () => {
             KH.chart(this.$refs.scenarioChart, {
                 type: 'bar',
                 data: {
-                    labels: sc.map((x) => x.raise === 0 ? 'Today' : '+' + Math.round(x.raise * 100) + '%'),
+                    labels: sc.map((x) => this.raiseLabel(x.raise)),
                     datasets: [
-                        { type: 'bar', label: 'Tax', data: sc.map((x) => x.tax), backgroundColor: sc.map((x) => KH.slabColor(x.top_rate)), borderRadius: 6, yAxisID: 'y', maxBarThickness: 40 },
-                        { type: 'line', label: 'Monthly take-home', data: sc.map((x) => x.monthly_take_home), borderColor: green, backgroundColor: green, yAxisID: 'y2', tension: 0.25, pointRadius: 3, borderWidth: 2 },
+                        { type: 'bar', label: KH.t('Tax'), data: sc.map((x) => x.tax), backgroundColor: sc.map((x) => KH.slabColor(x.top_rate)), borderRadius: 6, yAxisID: 'y', maxBarThickness: 40 },
+                        { type: 'line', label: KH.t('Monthly take-home'), data: sc.map((x) => x.monthly_take_home), borderColor: green, backgroundColor: green, yAxisID: 'y2', tension: 0.25, pointRadius: 3, borderWidth: 2 },
                     ],
                 },
                 options: {
                     interaction: { mode: 'index', intersect: false },
                     plugins: { tooltip: { callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + KH.bdt(c.parsed.y) } } },
                     scales: {
-                        y: KH.axisMoney({ beginAtZero: true, title: { display: true, text: 'Tax per year' } }),
-                        y2: { position: 'right', grid: { display: false }, ticks: { callback: (v) => KH.short(v) }, title: { display: true, text: 'Take-home per month' } },
+                        y: KH.axisMoney({ beginAtZero: true, title: { display: true, text: KH.t('Tax per year') } }),
+                        y2: { position: 'right', grid: { display: false }, ticks: { callback: (v) => KH.short(v) }, title: { display: true, text: KH.t('Take-home per month') } },
                         x: { grid: { display: false } },
                     },
                 },
@@ -275,17 +278,17 @@ document.addEventListener('alpine:init', () => {
                 type: 'line',
                 data: {
                     datasets: [
-                        { label: 'Marginal slab rate', data: rc.points.map((p) => ({ x: p.income, y: p.marginal * 100 })), borderColor: turmeric, backgroundColor: turmeric, stepped: true, pointRadius: 0, borderWidth: 2 },
-                        { label: 'Average (effective) rate', data: rc.points.map((p) => ({ x: p.income, y: p.effective * 100 })), borderColor: red, backgroundColor: red, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
-                        { type: 'scatter', label: 'You', data: [{ x: rc.you.income, y: rc.you.effective * 100 }], backgroundColor: KH.css('--ink'), borderColor: KH.css('--surface'), borderWidth: 2, pointRadius: 7, pointHoverRadius: 9 },
+                        { label: KH.t('Marginal slab rate'), data: rc.points.map((p) => ({ x: p.income, y: p.marginal * 100 })), borderColor: turmeric, backgroundColor: turmeric, stepped: true, pointRadius: 0, borderWidth: 2 },
+                        { label: KH.t('Average (effective) rate'), data: rc.points.map((p) => ({ x: p.income, y: p.effective * 100 })), borderColor: red, backgroundColor: red, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+                        { type: 'scatter', label: KH.t('You'), data: [{ x: rc.you.income, y: rc.you.effective * 100 }], backgroundColor: KH.css('--ink'), borderColor: KH.css('--surface'), borderWidth: 2, pointRadius: 7, pointHoverRadius: 9 },
                     ],
                 },
                 options: {
                     parsing: false,
                     interaction: { mode: 'nearest', axis: 'x', intersect: false },
-                    plugins: { tooltip: { callbacks: { title: (items) => 'Income ' + KH.bdt(items[0].parsed.x), label: (c) => ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%' } } },
+                    plugins: { tooltip: { callbacks: { title: (items) => KH.t('Income :amount', { amount: KH.bdt(items[0].parsed.x) }), label: (c) => ' ' + c.dataset.label + ': ' + KH.num(c.parsed.y.toFixed(1)) + '%' } } },
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: (v) => v + '%' }, grid: { color: line } },
+                        y: { beginAtZero: true, ticks: { callback: (v) => KH.num(v) + '%' }, grid: { color: line } },
                         x: { type: 'linear', min: 0, max: rc.points[rc.points.length - 1].income, ticks: { callback: (v) => KH.short(v), maxTicksLimit: 8 }, grid: { display: false } },
                     },
                 },
@@ -324,7 +327,7 @@ document.addEventListener('alpine:init', () => {
                     labels: pc.map((p) => p.label),
                     datasets: [{ data: pc.map((p) => p.value), backgroundColor: [green, turmeric, red], borderColor: KH.css('--surface'), borderWidth: 3 }],
                 },
-                options: { cutout: '64%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + KH.bdt(c.parsed) + ' a month' } } } },
+                options: { cutout: '64%', plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (c) => ' ' + KH.t(':label: :amount a month', { label: c.label, amount: KH.bdt(c.parsed) }) } } } },
             });
 
             // 7. Tax under each year's rules
@@ -334,12 +337,12 @@ document.addEventListener('alpine:init', () => {
                 data: {
                     labels: fu.map((f) => f.label + (f.projected ? ' *' : '')),
                     datasets: [{
-                        label: 'Tax', data: fu.map((f) => f.tax), borderRadius: 6, maxBarThickness: 54,
+                        label: KH.t('Tax'), data: fu.map((f) => f.tax), borderRadius: 6, maxBarThickness: 54,
                         backgroundColor: fu.map((f) => f.current ? red : (f.projected ? KH.css('--slab-1') : KH.css('--exempt'))),
                     }],
                 },
                 options: {
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' Tax: ' + KH.bdt(c.parsed.y), afterLabel: (c) => ' Tax-free limit: ' + KH.bdt(fu[c.dataIndex].threshold) } } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + KH.t('Tax: :amount', { amount: KH.bdt(c.parsed.y) }), afterLabel: (c) => ' ' + KH.t('Tax-free limit: :amount', { amount: KH.bdt(fu[c.dataIndex].threshold) }) } } },
                     scales: { y: KH.axisMoney({ beginAtZero: true }), x: { grid: { display: false }, ticks: { font: { size: 11 } } } },
                 },
             });
@@ -349,12 +352,12 @@ document.addEventListener('alpine:init', () => {
             KH.chart(this.$refs.categoryChart, {
                 type: 'bar',
                 data: {
-                    labels: cats.map((c) => ({ general: 'General', women_senior: 'Woman or 65+', disabled: 'Disability', third_gender: 'Third gender', freedom_fighter: 'Freedom fighter' }[c.key] || c.label)),
-                    datasets: [{ label: 'Tax', data: cats.map((c) => c.tax), backgroundColor: cats.map((c) => c.current ? red : KH.css('--slab-0')), borderRadius: 6, maxBarThickness: 22 }],
+                    labels: cats.map((c) => ({ general: KH.t('General'), women_senior: KH.t('Woman or 65+'), disabled: KH.t('Disability'), third_gender: KH.t('Third gender'), freedom_fighter: KH.t('Freedom fighter') }[c.key] || c.label)),
+                    datasets: [{ label: KH.t('Tax'), data: cats.map((c) => c.tax), backgroundColor: cats.map((c) => c.current ? red : KH.css('--slab-0')), borderRadius: 6, maxBarThickness: 22 }],
                 },
                 options: {
                     indexAxis: 'y',
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' Tax: ' + KH.bdt(c.parsed.x), afterLabel: (c) => ' Tax-free limit: ' + KH.bdt(cats[c.dataIndex].threshold) } } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + KH.t('Tax: :amount', { amount: KH.bdt(c.parsed.x) }), afterLabel: (c) => ' ' + KH.t('Tax-free limit: :amount', { amount: KH.bdt(cats[c.dataIndex].threshold) }) } } },
                     scales: { x: KH.axisMoney({ beginAtZero: true }), y: { grid: { display: false }, ticks: { color: muted, font: { size: 11 } } } },
                 },
             });

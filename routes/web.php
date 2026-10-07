@@ -4,8 +4,11 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalculationController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\LangController;
 use App\Http\Controllers\TargetTaxController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/lang/{locale}.js', [LangController::class, 'script'])->where('locale', 'bn')->name('lang.script');
 
 // Public: anyone can calculate. Saving needs an account.
 Route::get('/', [CalculatorController::class, 'index'])->name('home');

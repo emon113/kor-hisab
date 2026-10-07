@@ -33,6 +33,6 @@ class TargetTaxRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['target_tax' => 'tax amount'];
+        return ['target_tax' => __('tax amount')];
     }
 }

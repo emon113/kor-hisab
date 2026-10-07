@@ -2,6 +2,7 @@
 
 namespace App\Services\Tax;
 
+use App\Support\Lang;
 use App\Support\Money;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -62,10 +63,10 @@ final class TaxReport
             'input' => $in,
             'rules' => [
                 'year' => $in['year'],
-                'label' => $ctx['year']['label'],
-                'income_year' => $ctx['year']['income_year'],
+                'label' => Lang::label($ctx['year']['label']),
+                'income_year' => Lang::label($ctx['year']['income_year']),
                 'projected' => (bool) $ctx['year']['projected'],
-                'category' => $this->engine->rules()['categories'][$in['category']],
+                'category' => Lang::t($this->engine->rules()['categories'][$in['category']]),
                 'threshold' => $ctx['threshold'],
                 'exemption_cap' => $ctx['ex_cap'],
                 'rebate_rate' => $ctx['rebate_rate'],
@@ -86,9 +87,9 @@ final class TaxReport
                 'future' => $this->futureYears($in, $inv['total']),
                 'categories' => $this->categoryComparison($in, $inv['total']),
                 'paycheck' => [
-                    ['label' => 'Take-home after saving', 'value' => max(0.0, ($gross - $liability - $inv['invested']) / 12)],
-                    ['label' => 'Investments', 'value' => $inv['invested'] / 12],
-                    ['label' => 'Tax', 'value' => $liability / 12],
+                    ['label' => Lang::t('Take-home after saving'), 'value' => max(0.0, ($gross - $liability - $inv['invested']) / 12)],
+                    ['label' => Lang::t('Investments'), 'value' => $inv['invested'] / 12],
+                    ['label' => Lang::t('Tax'), 'value' => $liability / 12],
                 ],
             ],
         ];
@@ -106,9 +107,9 @@ final class TaxReport
             $open = $row['to'] >= TaxEngine::INF;
             $width = $open ? null : $row['to'] - $row['from'];
             $label = match (true) {
-                $i === 0 => 'First '.Money::bdt($width),
-                $open => 'Remaining income',
-                default => 'Next '.Money::bdt($width),
+                $i === 0 => Lang::t('First :amount', ['amount' => Money::bdt($width)]),
+                $open => Lang::t('Remaining income'),
+                default => Lang::t('Next :amount', ['amount' => Money::bdt($width)]),
             };
             $rows[] = [
                 'label' => $label,
@@ -151,6 +152,12 @@ final class TaxReport
 
     private function investments(array $inv, array $core, array $ctx, float $gross): array
     {
+        foreach ($inv['items'] as &$item) {
+            $item['label'] = Lang::t($item['label']);
+            $item['hint'] = Lang::t($item['hint']);
+        }
+        unset($item);
+
         $needed = ceil($core['investment_needed']);
         $eligible = $inv['total'];
         $gap = max(0.0, $needed - $eligible);
@@ -224,10 +231,10 @@ final class TaxReport
 
     private function incomeSplit(array $core, array $ctx): array
     {
-        $parts = [['label' => 'Tax-free salary (⅓ rule)', 'value' => $core['exemption'], 'rate' => null]];
+        $parts = [['label' => Lang::t('Tax-free salary (⅓ rule)'), 'value' => $core['exemption'], 'rate' => null]];
         foreach ($this->engine->slabs($core['taxable'], $ctx) as $i => $row) {
             $parts[] = [
-                'label' => $i === 0 ? 'Tax-free slab' : Money::pct($row['rate'], 0).' slab',
+                'label' => $i === 0 ? Lang::t('Tax-free slab') : Lang::t(':rate slab', ['rate' => Money::pct($row['rate'], 0)]),
                 'value' => $row['amount'],
                 'rate' => $row['rate'],
             ];
@@ -238,21 +245,21 @@ final class TaxReport
 
     private function waterfall(array $s, array $core): array
     {
-        $steps = [['label' => 'Gross tax', 'value' => $s['gross_tax'], 'kind' => 'up']];
+        $steps = [['label' => Lang::t('Gross tax'), 'value' => $s['gross_tax'], 'kind' => 'up']];
         if ($s['rebate'] > 0) {
-            $steps[] = ['label' => 'Rebate', 'value' => -$s['rebate'], 'kind' => 'down'];
+            $steps[] = ['label' => Lang::t('Rebate'), 'value' => -$s['rebate'], 'kind' => 'down'];
         }
         $topUp = $s['tax_after_rebate'] - ($s['gross_tax'] - $s['rebate']);
         if ($topUp > 0.5) {
-            $steps[] = ['label' => 'Minimum tax top-up', 'value' => $topUp, 'kind' => 'up'];
+            $steps[] = ['label' => Lang::t('Minimum tax top-up'), 'value' => $topUp, 'kind' => 'up'];
         }
         if (abs($s['filing_adjustment']) > 0) {
-            $steps[] = ['label' => $s['filing_adjustment'] < 0 ? 'Early filing' : 'Late filing', 'value' => $s['filing_adjustment'], 'kind' => $s['filing_adjustment'] < 0 ? 'down' : 'up'];
+            $steps[] = ['label' => ($s['filing_adjustment'] < 0 ? Lang::t('Early filing') : Lang::t('Late filing')), 'value' => $s['filing_adjustment'], 'kind' => $s['filing_adjustment'] < 0 ? 'down' : 'up'];
         }
-        $steps[] = ['label' => 'Liability', 'value' => $s['liability'], 'kind' => 'total'];
+        $steps[] = ['label' => Lang::t('Liability'), 'value' => $s['liability'], 'kind' => 'total'];
         if ($s['tds_paid'] > 0) {
-            $steps[] = ['label' => 'TDS paid', 'value' => -$s['tds_paid'], 'kind' => 'down'];
-            $steps[] = ['label' => $s['payable'] >= 0 ? 'To pay' : 'Refund', 'value' => $s['payable'], 'kind' => 'total'];
+            $steps[] = ['label' => Lang::t('TDS paid'), 'value' => -$s['tds_paid'], 'kind' => 'down'];
+            $steps[] = ['label' => ($s['payable'] >= 0 ? Lang::t('To pay') : Lang::t('Refund')), 'value' => $s['payable'], 'kind' => 'total'];
         }
 
         return $steps;
@@ -320,7 +327,7 @@ final class TaxReport
         foreach ($this->engine->rules()['years'] as $key => $year) {
             $ctx = $this->engine->context(['year' => $key] + $in);
             $c = $this->engine->core($in['gross_income'], $eligible, $ctx);
-            $out[] = ['year' => $key, 'label' => $year['label'], 'projected' => (bool) $year['projected'],
+            $out[] = ['year' => $key, 'label' => Lang::label($year['label']), 'projected' => (bool) $year['projected'],
                 'threshold' => $ctx['threshold'], 'tax' => $c['tax'], 'current' => $key === $in['year']];
         }
 
@@ -332,7 +339,7 @@ final class TaxReport
         $out = [];
         foreach ($this->engine->rules()['categories'] as $key => $label) {
             $ctx = $this->engine->context(['category' => $key] + $in);
-            $out[] = ['key' => $key, 'label' => $label, 'threshold' => $ctx['threshold'],
+            $out[] = ['key' => $key, 'label' => Lang::t($label), 'threshold' => $ctx['threshold'],
                 'tax' => $this->engine->netTax($in['gross_income'], $eligible, $ctx), 'current' => $key === $in['category']];
         }
 
@@ -348,38 +355,46 @@ final class TaxReport
         $eligible = $inv['eligible'];
         $tax = $core['tax'];
         $out = [];
-        $add = function (string $key, string $icon, string $tone, string $title, string $text) use (&$out) {
-            $out[] = compact('key', 'icon', 'tone', 'title', 'text');
+        // Title and text are English templates with :placeholders, translated by Lang::t().
+        $add = function (string $key, string $icon, string $tone, string $title, string $text, array $vars = []) use (&$out) {
+            $out[] = ['key' => $key, 'icon' => $icon, 'tone' => $tone, 'title' => Lang::t($title, $vars), 'text' => Lang::t($text, $vars)];
         };
+        $bdt = fn (float $v) => Money::bdt($v);
+        $pct0 = fn (float $r) => Money::pct($r, 0);
 
         // Next slab
         if ($next['at_top']) {
             $add('slab', 'mountain', 'info', 'You are in the top slab',
-                'Every extra taka of taxable income is taxed at '.Money::pct($next['rate_now'], 0).'. The investment rebate is now your main lever.');
+                'Every extra taka of taxable income is taxed at :rate. The investment rebate is now your main lever.',
+                ['rate' => $pct0($next['rate_now'])]);
         } elseif ($next['rate_now'] == 0) {
-            $add('slab', 'sprout', 'good', Money::bdt($next['raise_needed']).' of tax-free headroom',
-                'Your income can grow by '.Money::bdt($next['raise_needed']).' before any tax applies. The first slab after that is '.Money::pct($next['rate_next'], 0).'.');
+            $add('slab', 'sprout', 'good', ':amount of tax-free headroom',
+                'Your income can grow by :amount before any tax applies. The first slab after that is :rate.',
+                ['amount' => $bdt($next['raise_needed']), 'rate' => $pct0($next['rate_next'])]);
         } else {
-            $add('slab', 'trending-up', 'watch', 'Next slab in '.Money::bdt($next['raise_needed']),
-                'Your next '.Money::bdt($next['raise_needed']).' of raise (about '.Money::bdt($next['raise_monthly']).' a month) stays in the '
-                .Money::pct($next['rate_now'], 0).' slab. Anything beyond that is taxed in the '.Money::pct($next['rate_next'], 0).' slab.');
+            $add('slab', 'trending-up', 'watch', 'Next slab in :amount',
+                'Your next :amount of raise (about :monthly a month) stays in the :now slab. Anything beyond that is taxed in the :next slab.',
+                ['amount' => $bdt($next['raise_needed']), 'monthly' => $bdt($next['raise_monthly']), 'now' => $pct0($next['rate_now']), 'next' => $pct0($next['rate_next'])]);
         }
 
         // Rebate
         if ($inv['needed'] > 0 && $inv['gap'] > 0) {
-            $add('rebate', 'target', 'watch', 'Invest '.Money::bdt($inv['gap']).' more to save '.Money::bdt($inv['extra_saving']),
-                'That is a guaranteed '.Money::pct($ctx['rebate_rate'], 0).' return from the rebate alone. You need '.Money::bdt($inv['needed'])
-                .' of eligible investment in total and have '.Money::bdt($eligible).'.');
+            $add('rebate', 'target', 'watch', 'Invest :gap more to save :saving',
+                'That is a guaranteed :rate return from the rebate alone. You need :needed of eligible investment in total and have :have.',
+                ['gap' => $bdt($inv['gap']), 'saving' => $bdt($inv['extra_saving']), 'rate' => $pct0($ctx['rebate_rate']), 'needed' => $bdt($inv['needed']), 'have' => $bdt($eligible)]);
         } elseif ($inv['needed'] > 0) {
             $add('rebate', 'check', 'good', 'Full rebate unlocked',
-                'Your '.Money::bdt($eligible).' of eligible investment earns the maximum rebate of '.Money::bdt($inv['rebate_max']).'.');
+                'Your :amount of eligible investment earns the maximum rebate of :max.',
+                ['amount' => $bdt($eligible), 'max' => $bdt($inv['rebate_max'])]);
         } elseif ($core['taxable'] > $ctx['threshold']) {
             $add('rebate', 'alert', 'info', 'Investing will not lower your tax',
-                'Your tax is already at the minimum of '.Money::bdt($ctx['min_tax']).', so a rebate has nothing left to reduce.');
+                'Your tax is already at the minimum of :min, so a rebate has nothing left to reduce.',
+                ['min' => $bdt($ctx['min_tax'])]);
         }
         if ($inv['wasted'] > 0 && $core['taxable'] > $ctx['threshold']) {
-            $add('wasted', 'alert', 'watch', Money::bdt($inv['wasted']).' of investment earns no rebate',
-                'Money above the rebate limit, or above an instrument’s cap, is still saving, but it does not reduce this year’s tax.');
+            $add('wasted', 'alert', 'watch', ':amount of investment earns no rebate',
+                'Money above the rebate limit, or above an instrument’s cap, is still saving, but it does not reduce this year’s tax.',
+                ['amount' => $bdt($inv['wasted'])]);
         }
 
         // Filing date
@@ -387,29 +402,35 @@ final class TaxReport
         $zone = $today->getTimezone();
         $early = new DateTimeImmutable("{$endYear}-09-30", $zone);
         $standard = new DateTimeImmutable("{$endYear}-12-31", $zone);
+        $year = Money::digits((string) $endYear);
         if ($tax > 0) {
             if ($today <= $early && $in['filing'] !== 'early') {
-                $saving = abs($e->filingAdjustment($tax, 'early'));
-                $add('filing', 'calendar', 'good', 'File by 30 September '.$endYear.' to save '.Money::bdt($saving),
-                    'Returns filed between 1 July and 30 September get a 5% rebate on the tax, up to ৳25,000.');
+                $add('filing', 'calendar', 'good', 'File by 30 September :year to save :amount',
+                    'Returns filed between 1 July and 30 September get a 5% rebate on the tax, up to ৳25,000.',
+                    ['year' => $year, 'amount' => $bdt(abs($e->filingAdjustment($tax, 'early')))]);
             } elseif (in_array($in['filing'], ['late', 'very_late'], true)) {
-                $add('filing', 'alert', 'cost', 'Late filing adds '.Money::bdt($s['filing_adjustment']),
-                    'File by 31 December '.$endYear.' to avoid the additional tax.');
+                $add('filing', 'alert', 'cost', 'Late filing adds :amount',
+                    'File by 31 December :year to avoid the additional tax.',
+                    ['amount' => $bdt($s['filing_adjustment']), 'year' => $year]);
             } elseif ($today > $early && $today <= $standard) {
-                $add('filing', 'calendar', 'watch', 'File by 31 December '.$endYear,
-                    'Filing after December adds 2% (at least ৳3,000), rising to 5% (at least ৳5,000) after March.');
+                $add('filing', 'calendar', 'watch', 'File by 31 December :year',
+                    'Filing after December adds 2% (at least ৳3,000), rising to 5% (at least ৳5,000) after March.',
+                    ['year' => $year]);
             }
         }
 
         // TDS status
         if ($s['liability'] > 0 || $s['tds_paid'] > 0) {
             if ($s['payable'] > 0.5) {
-                $add('tds', 'receipt', 'cost', Money::bdt($s['payable']).' still to pay',
-                    ($s['tds_paid'] > 0 ? 'After the '.Money::bdt($s['tds_paid']).' already deducted, set' : 'Set')
-                    .' aside about '.Money::bdt($s['monthly_tax']).' a month, or ask your employer to deduct that much as monthly TDS.');
+                $add('tds', 'receipt', 'cost', ':amount still to pay',
+                    $s['tds_paid'] > 0
+                        ? 'After the :paid already deducted, set aside about :monthly a month, or ask your employer to deduct that much as monthly TDS.'
+                        : 'Set aside about :monthly a month, or ask your employer to deduct that much as monthly TDS.',
+                    ['amount' => $bdt($s['payable']), 'paid' => $bdt($s['tds_paid']), 'monthly' => $bdt($s['monthly_tax'])]);
             } elseif ($s['payable'] < -0.5) {
-                $add('tds', 'receipt', 'good', Money::bdt(-$s['payable']).' refund due',
-                    'More tax was deducted than you owe. Claim it in your return; salaried taxpayers now get automated refunds.');
+                $add('tds', 'receipt', 'good', ':amount refund due',
+                    'More tax was deducted than you owe. Claim it in your return; salaried taxpayers now get automated refunds.',
+                    ['amount' => $bdt(-$s['payable'])]);
             } else {
                 $add('tds', 'check', 'good', 'Your TDS covers the full tax', 'Nothing more to pay when you file.');
             }
@@ -418,38 +439,46 @@ final class TaxReport
         if ($gross > 0) {
             // Raise sensitivity
             $extra = $e->netTax($gross + 10000, $eligible, $ctx) - $tax;
-            $add('raise', 'coins', 'info', 'You keep '.Money::bdt(10000 - $extra).' of every ৳10,000 raise',
-                'An extra ৳10,000 of salary adds about '.Money::bdt($extra).' in tax.'
-                .($gross < $ctx['ex_cap'] / max($ctx['ex_fraction'], 1e-9) ? ' One-third of any raise is tax-free, which softens your slab rate.' : ''));
+            $softens = $gross < $ctx['ex_cap'] / max($ctx['ex_fraction'], 1e-9);
+            $add('raise', 'coins', 'info', 'You keep :keep of every ৳10,000 raise',
+                $softens
+                    ? 'An extra ৳10,000 of salary adds about :extra in tax. One-third of any raise is tax-free, which softens your slab rate.'
+                    : 'An extra ৳10,000 of salary adds about :extra in tax.',
+                ['keep' => $bdt(10000 - $extra), 'extra' => $bdt($extra)]);
 
             // Exemption shield
             $capGross = $ctx['ex_fraction'] > 0 ? $ctx['ex_cap'] / $ctx['ex_fraction'] : 0;
             if ($gross < $capGross) {
                 $add('shield', 'shield', 'good', 'Your tax-free salary is still growing',
-                    'One-third of your salary ('.Money::bdt($core['exemption']).' now) is tax-free until gross income reaches '
-                    .Money::bdt($capGross).', which is '.Money::bdt($capGross - $gross).' away.');
+                    'One-third of your salary (:now now) is tax-free until gross income reaches :cap, which is :away away.',
+                    ['now' => $bdt($core['exemption']), 'cap' => $bdt($capGross), 'away' => $bdt($capGross - $gross)]);
             } else {
                 $add('shield', 'shield', 'info', 'Your tax-free salary is maxed out',
-                    'The exemption stops at '.Money::bdt($ctx['ex_cap']).', so every extra taka of salary is now fully taxable at your slab rate.');
+                    'The exemption stops at :cap, so every extra taka of salary is now fully taxable at your slab rate.',
+                    ['cap' => $bdt($ctx['ex_cap'])]);
             }
 
             // Average vs marginal
-            $add('rates', 'percent', 'info', 'Average '.Money::pct($s['effective_rate']).', marginal '.Money::pct($s['marginal_rate'], 0),
-                'You pay '.Money::pct($s['effective_rate']).' of gross income in tax overall, but raises and bonuses are taxed at your top slab rate.');
+            $add('rates', 'percent', 'info', 'Average :average, marginal :marginal',
+                'You pay :average of gross income in tax overall, but raises and bonuses are taxed at your top slab rate.',
+                ['average' => Money::pct($s['effective_rate']), 'marginal' => $pct0($s['marginal_rate'])]);
 
             // Next year forecast
             $g2 = $gross * 1.1;
             $c2 = $e->core($g2, $eligible, $ctx);
             $slabMove = $e->topBandIndex($c2['taxable'], $ctx) !== $e->topBandIndex($core['taxable'], $ctx);
-            $add('forecast', 'calendar', 'info', 'A 10% raise means '.Money::bdt($c2['tax'] - $tax).' more tax',
-                'At '.Money::bdt($g2).' a year, tax rises to about '.Money::bdt($c2['tax']).' and the investment needed for the full rebate becomes '
-                .Money::bdt(ceil($c2['investment_needed'])).($slabMove ? '. That raise also moves you into the '.Money::pct($e->marginalRate($c2['taxable'], $ctx), 0).' slab.' : '.'));
+            $add('forecast', 'calendar', 'info', 'A 10% raise means :amount more tax',
+                $slabMove
+                    ? 'At :gross a year, tax rises to about :tax and the investment needed for the full rebate becomes :needed. That raise also moves you into the :rate slab.'
+                    : 'At :gross a year, tax rises to about :tax and the investment needed for the full rebate becomes :needed.',
+                ['amount' => $bdt($c2['tax'] - $tax), 'gross' => $bdt($g2), 'tax' => $bdt($c2['tax']), 'needed' => $bdt(ceil($c2['investment_needed'])), 'rate' => $pct0($e->marginalRate($c2['taxable'], $ctx))]);
 
             // Bonus
             $bonus = $gross / 12;
             $bonusTax = $e->netTax($gross + $bonus, $eligible, $ctx) - $tax;
-            $add('bonus', 'gift', 'info', 'An extra month’s bonus costs '.Money::bdt($bonusTax).' in tax',
-                'A one-off bonus of '.Money::bdt($bonus).' adds about '.Money::bdt($bonusTax).' to your tax, so you keep '.Money::bdt($bonus - $bonusTax).'.');
+            $add('bonus', 'gift', 'info', 'An extra month’s bonus costs :tax in tax',
+                'A one-off bonus of :bonus adds about :tax to your tax, so you keep :keep.',
+                ['tax' => $bdt($bonusTax), 'bonus' => $bdt($bonus), 'keep' => $bdt($bonus - $bonusTax)]);
 
             // Raise needed for 10% more take-home
             $takeHome = $gross - $tax;
@@ -464,25 +493,29 @@ final class TaxReport
                     $lo = $mid;
                 }
             }
-            $add('takehome', 'wallet', 'info', 'A '.Money::pct($hi / $gross - 1).' raise lifts take-home by 10%',
-                'To bring home '.Money::bdt($takeHome * 0.1 / 12).' more a month, your gross salary needs to reach about '.Money::bdt(ceil($hi)).'.');
+            $add('takehome', 'wallet', 'info', 'A :pct raise lifts take-home by 10%',
+                'To bring home :monthly more a month, your gross salary needs to reach about :gross.',
+                ['pct' => Money::pct($hi / $gross - 1), 'monthly' => $bdt($takeHome * 0.1 / 12), 'gross' => $bdt(ceil($hi))]);
 
             // Per ৳100 / days
             if ($s['liability'] > 0) {
-                $add('days', 'clock', 'info', '৳'.number_format($s['effective_rate'] * 100, 2).' of every ৳100 goes to tax',
-                    'Spread across the year, that equals about '.max(1, (int) round($s['effective_rate'] * 365)).' days of your income.');
+                $add('days', 'clock', 'info', '৳:per of every ৳100 goes to tax',
+                    'Spread across the year, that equals about :days days of your income.',
+                    ['per' => Money::digits(number_format($s['effective_rate'] * 100, 2)), 'days' => Money::digits((string) max(1, (int) round($s['effective_rate'] * 365)))]);
             }
         }
 
         if ($core['min_tax_applied']) {
             $add('mintax', 'alert', 'watch', 'Minimum tax applies',
-                'Your tax after rebate works out below '.Money::bdt($ctx['min_tax']).', so you pay the minimum. More investment will not lower it.');
+                'Your tax after rebate works out below :min, so you pay the minimum. More investment will not lower it.',
+                ['min' => $bdt($ctx['min_tax'])]);
         }
 
         foreach ($future as $row) {
             if ($row['projected'] && $row['tax'] < $tax - 1) {
-                $add('roadmap', 'sprout', 'good', 'Tax-free limit rises to '.Money::bdt($row['threshold']).' in '.$row['label'],
-                    'At today’s income your tax under that year’s rules would be about '.Money::bdt($row['tax']).', '.Money::bdt($tax - $row['tax']).' less.');
+                $add('roadmap', 'sprout', 'good', 'Tax-free limit rises to :limit in :year',
+                    'At today’s income your tax under that year’s rules would be about :tax, :less less.',
+                    ['limit' => $bdt($row['threshold']), 'year' => $row['label'], 'tax' => $bdt($row['tax']), 'less' => $bdt($tax - $row['tax'])]);
                 break;
             }
         }

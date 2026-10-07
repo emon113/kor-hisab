@@ -38,9 +38,9 @@ class CalculationInputRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'gross_income' => 'gross income',
-            'tds_paid' => 'tax already paid',
-            'disabled_children' => 'number of disabled children',
+            'gross_income' => __('gross income'),
+            'tds_paid' => __('tax already paid'),
+            'disabled_children' => __('number of disabled children'),
         ];
     }
 

@@ -46,7 +46,7 @@ class CalculationController extends Controller
         );
 
         return response()->json([
-            'message' => 'Saved as “'.$calculation->title.'”.',
+            'message' => __('Saved as “:title”.', ['title' => $calculation->title]),
             'calculation' => $this->payload($calculation),
         ], 201);
     }
@@ -61,7 +61,7 @@ class CalculationController extends Controller
         );
 
         return response()->json([
-            'message' => 'Changes saved.',
+            'message' => __('Changes saved.'),
             'calculation' => $this->payload($calculation),
         ]);
     }
@@ -73,8 +73,8 @@ class CalculationController extends Controller
         $calculation->delete();
 
         return $request->expectsJson()
-            ? response()->json(['message' => "Deleted “{$title}”."])
-            : redirect()->route('calculations.index')->with('status', "Deleted “{$title}”.");
+            ? response()->json(['message' => __('Deleted “:title”.', ['title' => $title])])
+            : redirect()->route('calculations.index')->with('status', __('Deleted “:title”.', ['title' => $title]));
     }
 
     public function compare(Request $request): View|RedirectResponse
@@ -87,7 +87,7 @@ class CalculationController extends Controller
 
         $pair = $request->user()->calculations()->whereIn('id', [$ids['a'], $ids['b']])->get()->keyBy('id');
         if ($pair->count() !== 2) {
-            return redirect()->route('calculations.index')->with('status', 'Pick two of your saved calculations to compare.');
+            return redirect()->route('calculations.index')->with('status', __('Pick two of your saved calculations to compare.'));
         }
 
         $a = $pair[$ids['a']];
@@ -109,7 +109,7 @@ class CalculationController extends Controller
             'notes' => $calculation->notes,
             'url' => route('calculations.show', $calculation),
             'update_url' => route('calculations.update', $calculation),
-            'updated' => $calculation->updated_at?->diffForHumans(),
+            'updated' => Money::digits((string) $calculation->updated_at?->diffForHumans()),
         ];
     }
 }

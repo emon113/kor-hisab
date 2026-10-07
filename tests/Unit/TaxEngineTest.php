@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Services\Tax\TargetTaxSolver;
 use App\Services\Tax\TaxEngine;
 use App\Services\Tax\TaxReport;
+use App\Support\Money;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -15,6 +16,8 @@ class TaxEngineTest extends TestCase
     protected function setUp(): void
     {
         $this->engine = new TaxEngine(require __DIR__.'/../../config/tax.php');
+        Money::useDigits('latin');
+        Money::useGrouping('intl');
     }
 
     private function report(array $input): array

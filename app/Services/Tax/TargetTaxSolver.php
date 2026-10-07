@@ -2,6 +2,7 @@
 
 namespace App\Services\Tax;
 
+use App\Support\Lang;
 use App\Support\Money;
 
 /**
@@ -56,8 +57,8 @@ final class TargetTaxSolver
 
         $core = $e->core($gross, $eligible, $ctx);
         if ($target > 0 && $target < $ctx['min_tax']) {
-            $warning = 'Any income above the tax-free limit pays at least '.Money::bdt($ctx['min_tax'])
-                .' (the minimum tax), so a lower tax is not possible. This is the smallest salary that pays tax.';
+            $warning = Lang::t('Any income above the tax-free limit pays at least :min (the minimum tax), so a lower tax is not possible. This is the smallest salary that pays tax.',
+                ['min' => Money::bdt($ctx['min_tax'])]);
         }
 
         $components = $this->split($gross, $raw['ratios'] ?? null);
@@ -99,7 +100,7 @@ final class TargetTaxSolver
         $sum = 0.0;
         foreach ($defaults as $key => $def) {
             $ratio = is_array($ratios) && array_key_exists($key, $ratios) ? max(0.0, (float) $ratios[$key]) : (float) $def['ratio'];
-            $parts[$key] = ['key' => $key, 'label' => $def['label'], 'ratio' => $ratio];
+            $parts[$key] = ['key' => $key, 'label' => Lang::t($def['label']), 'ratio' => $ratio];
             $sum += $ratio;
         }
         if ($sum <= 0) {
@@ -129,9 +130,9 @@ final class TargetTaxSolver
     {
         $lines = [];
         foreach ($components as $i => $c) {
-            $lines[] = ($i + 1).' '.$c['label'].' TK. '.Money::group($c['amount']).'/-';
+            $lines[] = Money::digits((string) ($i + 1)).' '.$c['label'].' '.Lang::t('TK. :amount/-', ['amount' => Money::group($c['amount'])]);
         }
-        $lines[] = 'Total = TK. '.Money::group($gross).'/-';
+        $lines[] = Lang::t('Total = TK. :amount/-', ['amount' => Money::group($gross)]);
 
         return implode("\n", $lines);
     }

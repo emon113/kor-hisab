@@ -9,13 +9,32 @@
         remove(key) { try { localStorage.removeItem(key); } catch (e) { /* ignore */ } },
     };
 
+    /* ---------- language ---------- */
+    // window.KH_LANG is loaded from /lang/<locale>.js on non-English pages.
+    KH.locale = () => document.documentElement.lang || 'en';
+    /** Translate English text and fill :placeholders, mirroring Laravel's __(). */
+    KH.t = (text, replace = {}) => {
+        let out = (window.KH_LANG && window.KH_LANG[text]) || text;
+        Object.keys(replace).sort((a, b) => b.length - a.length).forEach((key) => {
+            out = out.split(':' + key).join(String(replace[key]));
+        });
+        return out;
+    };
+
     /* ---------- numbers ---------- */
+    const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
+    KH.digitStyle = () => (KH.locale() === 'bn' && store.get('kh:digits', 'bn') !== 'latin' ? 'bn' : 'latin');
+    /** Swap 0-9 for ০-৯ when Bangla digits are on. */
+    KH.num = (text) => (KH.digitStyle() === 'bn' ? String(text).replace(/[0-9]/g, (d) => BN_DIGITS[d]) : String(text));
+    const toLatin = (text) => String(text ?? '').replace(/[০-৯]/g, (d) => String(BN_DIGITS.indexOf(d)));
+    const isDigit = (ch) => /[0-9০-৯]/.test(ch);
+
     KH.grouping = () => store.get('kh:grouping', 'intl');
     const formatters = {};
     KH.group = (n) => {
         const style = KH.grouping();
         formatters[style] ??= new Intl.NumberFormat(style === 'lakh' ? 'en-IN' : 'en-US', { maximumFractionDigits: 0 });
-        return formatters[style].format(Math.round(Number(n) || 0));
+        return KH.num(formatters[style].format(Math.round(Number(n) || 0)));
     };
     KH.bdt = (n) => {
         const v = Math.round(Number(n) || 0);
@@ -23,14 +42,15 @@
     };
     KH.short = (n) => {
         const v = Math.abs(Number(n) || 0);
-        if (v >= 10000000) return '৳' + (v / 10000000).toFixed(v >= 100000000 ? 0 : 1) + ' cr';
-        if (v >= 100000) return '৳' + (v / 100000).toFixed(v >= 1000000 ? 0 : 1) + ' lakh';
-        if (v >= 1000) return '৳' + Math.round(v / 1000) + 'k';
-        return '৳' + Math.round(v);
+        if (v >= 10000000) return '৳' + KH.num((v / 10000000).toFixed(v >= 100000000 ? 0 : 1)) + ' ' + KH.t('cr');
+        if (v >= 100000) return '৳' + KH.num((v / 100000).toFixed(v >= 1000000 ? 0 : 1)) + ' ' + KH.t('lakh');
+        if (v >= 1000) return '৳' + KH.num(Math.round(v / 1000)) + KH.t('k');
+        return '৳' + KH.num(Math.round(v));
     };
-    KH.pct = (r, d = 1) => ((Number(r) || 0) * 100).toFixed(d) + '%';
+    KH.pct = (r, d = 1) => KH.num(((Number(r) || 0) * 100).toFixed(d)) + '%';
+    /** Read a typed amount; accepts Latin and Bangla digits and ignores separators. */
     KH.parse = (s) => {
-        const digits = String(s ?? '').replace(/[^\d]/g, '');
+        const digits = toLatin(s).replace(/[^0-9]/g, '');
         return digits ? Math.min(Number(digits), 1e10) : 0;
     };
 
@@ -41,15 +61,15 @@
      */
     KH.reformat = (el, set) => {
         const caret = el.selectionStart ?? el.value.length;
-        const digitsBefore = el.value.slice(0, caret).replace(/\D/g, '').length;
+        const digitsBefore = [...el.value.slice(0, caret)].filter(isDigit).length;
         const value = KH.parse(el.value);
         set(value);
-        const text = el.value.replace(/\D/g, '') === '' ? '' : KH.group(value);
+        const text = [...el.value].some(isDigit) ? KH.group(value) : '';
         el.value = text;
         let i = 0;
         let seen = 0;
         while (i < text.length && seen < digitsBefore) {
-            if (/\d/.test(text[i])) seen++;
+            if (isDigit(text[i])) seen++;
             i++;
         }
         try { el.setSelectionRange(i, i); } catch (e) { /* not focusable */ }
@@ -86,10 +106,10 @@
         if (!res.ok) {
             const firstError = data?.errors ? Object.values(data.errors)[0]?.[0] : null;
             const message = firstError || ({
-                401: 'Sign in to do that.',
-                419: 'Your session expired. Refresh the page and try again.',
-                429: 'That was a lot of requests. Wait a few seconds and try again.',
-            }[res.status]) || data?.message || 'The server could not complete that. Try again.';
+                401: KH.t('Sign in to do that.'),
+                419: KH.t('Your session expired. Refresh the page and try again.'),
+                429: KH.t('That was a lot of requests. Wait a few seconds and try again.'),
+            }[res.status]) || data?.message || KH.t('The server could not complete that. Try again.');
             const err = new Error(message);
             err.status = res.status;
             err.errors = data?.errors ?? null;
@@ -157,6 +177,21 @@
         if (!document.cookie.includes('kh_grouping=' + current)) {
             document.cookie = 'kh_grouping=' + current + ';path=/;max-age=31536000;samesite=lax';
         }
+
+        // Bangla or Latin digits (only offered on Bangla pages). The server reads kh_digits too.
+        const digits = store.get('kh:digits', 'bn');
+        document.querySelectorAll('[data-digits]').forEach((btn) => {
+            btn.setAttribute('aria-pressed', String(btn.dataset.digits === digits));
+            btn.addEventListener('click', () => {
+                if (btn.dataset.digits === store.get('kh:digits', 'bn')) return;
+                store.set('kh:digits', btn.dataset.digits);
+                document.cookie = 'kh_digits=' + btn.dataset.digits + ';path=/;max-age=31536000;samesite=lax';
+                location.reload();
+            });
+        });
+        if (!document.cookie.includes('kh_digits=' + digits)) {
+            document.cookie = 'kh_digits=' + digits + ';path=/;max-age=31536000;samesite=lax';
+        }
     }
 
     /* ---------- charts ---------- */
@@ -164,6 +199,7 @@
         if (!window.Chart) return;
         const C = window.Chart;
         C.defaults.font.family = '"Hind Siliguri", system-ui, sans-serif';
+        C.defaults.locale = KH.digitStyle() === 'bn' ? 'bn-BD' : 'en-US';
         C.defaults.font.size = 12;
         C.defaults.color = KH.css('--muted');
         C.defaults.borderColor = KH.css('--line');

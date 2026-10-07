@@ -31,7 +31,7 @@ class AuthController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
-                'email' => 'Too many sign-in attempts. Try again in '.RateLimiter::availableIn($key).' seconds.',
+                'email' => __('Too many sign-in attempts. Try again in :seconds seconds.', ['seconds' => RateLimiter::availableIn($key)]),
             ]);
         }
 
@@ -39,7 +39,7 @@ class AuthController extends Controller
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([
-                'email' => 'That email and password don’t match an account.',
+                'email' => __('That email and password don’t match an account.'),
             ]);
         }
 
@@ -47,7 +47,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended(route('home'))
-            ->with('status', 'Signed in. Welcome back, '.$request->user()->firstName().'.');
+            ->with('status', __('Signed in. Welcome back, :name.', ['name' => $request->user()->firstName()]));
     }
 
     public function showRegister(): View
@@ -69,7 +69,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('home')
-            ->with('status', 'Account created. Save any calculation to find it later under Saved.');
+            ->with('status', __('Account created. Save any calculation to find it later under Saved.'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -78,6 +78,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home')->with('status', 'Signed out.');
+        return redirect()->route('home')->with('status', __('Signed out.'));
     }
 }

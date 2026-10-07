@@ -35,6 +35,12 @@ Anyone can use the calculators without an account. With an account, you can save
 - Number grouping toggle: international (1,335,524) or lakh/crore (13,35,524), stored in the `kh_grouping` cookie.
 - The browser keeps a draft of your inputs.
 
+### Bangla interface (বাংলা)
+- Every page, chart, generated prediction and validation message is available in Bangla. Switch with the **বাংলা / EN** button in the top bar or `?lang=bn`; the choice is kept in the `kh_locale` cookie.
+- Bangla pages use Bangla digits (১২৩) by default, with a footer toggle for Latin digits. Money inputs accept either digit set.
+- Translations live in `lang/bn.json` (keyed by the English text) and `lang/bn/validation.php`. Browser-side text uses the same file through `/lang/bn.js` and `KH.t()`.
+- `tests/Unit/TranslationCoverageTest.php` fails if any `__()`, `Lang::t()` or `KH.t()` string has no Bangla translation, so new text can't ship untranslated.
+
 ### Target tax to salary (`/target-tax`)
 - A reverse calculator: enter the tax you want to pay and it finds the smallest gross salary that produces it, using a binary search over the tax engine.
 - Rebate modes: no investment, a custom investment, or the maximum useful investment.
@@ -150,6 +156,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
 | POST | `/target-tax/ratios` | ✓ | Save default salary split |
 | GET / PUT | `/account`, `/account/password` | ✓ | Profile / password |
+| GET | `/lang/bn.js` | – | Bangla strings for browser-side text (cached) |
 | GET | `/up` | – | Health check (HTTP 200 when the app boots) |
 
 ---

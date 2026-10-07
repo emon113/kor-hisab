@@ -210,6 +210,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
     border: 1px solid var(--line); background: var(--surface); cursor: pointer; color: var(--ink-2);
 }
 .icon-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+.lang-btn { width: auto; padding: 0 12px; font-weight: 600; font-size: var(--t-sm); text-decoration: none; }
 [data-theme="light"] .when-dark, [data-theme="dark"] .when-light { display: none; }
 
 .menu { position: relative; }
@@ -485,6 +486,7 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .footer { border-top: 1px solid var(--line); margin-top: auto; }
 .footer-inner { max-width: 1320px; margin: 0 auto; padding: 20px 24px; display: flex; justify-content: space-between; gap: 20px; align-items: center; color: var(--muted); font-size: var(--t-sm); flex-wrap: wrap; }
 .footer-inner p { max-width: 70ch; }
+.footer-toggles { display: flex; gap: 18px; flex-wrap: wrap; }
 .grouping-toggle { display: inline-flex; align-items: center; gap: 4px; }
 .grouping-toggle span { margin-right: 6px; }
 .grouping-toggle button { border: 1px solid var(--line); background: var(--surface); padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: var(--t-xs); color: var(--muted); font-variant-numeric: tabular-nums; }

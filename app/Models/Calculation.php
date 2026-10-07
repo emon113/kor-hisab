@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Lang;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,6 +66,6 @@ class Calculation extends Model
 
     public function yearLabel(): string
     {
-        return config("tax.years.{$this->tax_year}.label", $this->tax_year);
+        return Lang::label(config("tax.years.{$this->tax_year}.label", $this->tax_year));
     }
 }

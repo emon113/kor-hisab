@@ -25,7 +25,7 @@ class AccountController extends Controller
 
         $user->update($data);
 
-        return back()->with('status', 'Profile updated.');
+        return back()->with('status', __('Profile updated.'));
     }
 
     public function password(Request $request): RedirectResponse
@@ -37,6 +37,6 @@ class AccountController extends Controller
 
         $request->user()->update(['password' => $data['password']]);
 
-        return back()->with('status', 'Password changed.');
+        return back()->with('status', __('Password changed.'));
     }
 }

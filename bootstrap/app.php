@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,8 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Set from JavaScript (number grouping preference), so it must stay unencrypted.
-        $middleware->encryptCookies(except: ['kh_grouping']);
+        // Set from JavaScript (number grouping and digit preferences), so they must stay unencrypted.
+        $middleware->encryptCookies(except: ['kh_grouping', 'kh_digits']);
+        $middleware->web(append: [SetLocale::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
