@@ -530,6 +530,14 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
     .calc-item { grid-template-columns: 24px 1fr auto; }
     .calc-item .calc-fig { display: none; }
     .wealth-item { grid-template-columns: 1fr auto; }
+    .cert-layout, .review { grid-template-columns: 1fr; }
+    .doc-viewer { position: static; max-height: none; }
+    .doc-viewer iframe { height: 50vh; }
+    .cert-item { grid-template-columns: 40px 1fr auto; }
+    .cert-item .calc-fig, .cert-item > span:empty { display: none; }
+    .report-kpis { grid-template-columns: 1fr 1fr; }
+    .report-cover { grid-template-columns: 1fr; }
+    .review-row { grid-template-columns: 1fr; }
     .offer-grid { grid-template-columns: 1fr; }
     .offer-add { width: auto; padding: 14px; grid-auto-flow: column; }
     .split-even { grid-template-columns: 1fr; }
@@ -580,6 +588,104 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .print-only { display: none; }
+
+/* ---------- salary certificates: upload ---------- */
+.cert-layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+.uploader { padding: 24px; display: grid; gap: 18px; }
+.stepper { list-style: none; padding: 0; margin: 0; display: flex; gap: 8px; flex-wrap: wrap; font-size: var(--t-sm); color: var(--muted); }
+.stepper li { display: flex; align-items: center; gap: 8px; }
+.stepper li + li::before { content: ""; width: 24px; height: 1px; background: var(--line-strong); }
+.stepper span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong); font-size: var(--t-xs); font-weight: 700; transition: background-color .3s var(--ease), color .3s var(--ease), border-color .3s; }
+.stepper li.on { color: var(--ink); }
+.stepper li.on span { border-color: var(--green); color: var(--green); }
+.stepper li.done span { background: var(--green); color: var(--surface); }
+.dropzone {
+    display: grid; place-items: center; min-height: 230px; border-radius: var(--r-lg); border: 1.5px dashed var(--line-strong);
+    background: var(--surface-2); cursor: pointer; text-align: center; padding: 22px; transition: border-color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--ease);
+}
+.dropzone:hover, .dropzone.dragging { border-color: var(--green); background: color-mix(in srgb, var(--mint) 55%, var(--surface-2)); }
+.dropzone.dragging { transform: scale(1.01); }
+.dropzone:has(input:focus-visible) { box-shadow: var(--focus); }
+.dropzone-empty { display: grid; gap: 8px; justify-items: center; }
+.dropzone-empty small { color: var(--muted); font-size: var(--t-sm); max-width: 44ch; }
+.dropzone-icon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--mint); color: var(--green); }
+.dropzone-file { display: flex; gap: 16px; align-items: center; text-align: left; animation: kh-pop .3s var(--ease); }
+.dropzone-file img { width: 120px; height: 150px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); box-shadow: var(--shadow-panel); }
+.dropzone-file div { display: grid; gap: 4px; }
+.dropzone-file small { color: var(--muted); }
+.pdf-badge { width: 110px; height: 140px; border-radius: 10px; display: grid; place-content: center; justify-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; color: var(--red); }
+.upload-progress { display: grid; gap: 12px; justify-items: center; text-align: center; }
+.scan { position: relative; width: 150px; height: 190px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); display: grid; place-items: center; }
+.scan img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.6); }
+.scan-line { position: absolute; left: 0; right: 0; height: 36px; top: -36px; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--green) 45%, transparent), transparent); animation: kh-scan 1.6s ease-in-out infinite; }
+@keyframes kh-scan { to { top: 100%; } }
+.upload-progress .meter { width: 100%; }
+.meter i.indeterminate { animation: kh-indeterminate 1.2s ease-in-out infinite; transform-origin: left; }
+@keyframes kh-indeterminate { 0% { transform: scaleX(.1) translateX(0); } 50% { transform: scaleX(.5) translateX(60%); } 100% { transform: scaleX(.1) translateX(900%); } }
+.uploader-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.privacy-note { display: flex; gap: 8px; align-items: flex-start; font-size: var(--t-xs); color: var(--muted); }
+.privacy-note svg { flex: none; margin-top: 2px; }
+.cert-help { padding: 22px; }
+.cert-help h3 { margin-bottom: 10px; }
+.cert-list { list-style: none; margin: 0; padding: 0; }
+.cert-item { display: grid; grid-template-columns: 40px minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; gap: 16px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
+.cert-thumb { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-2); }
+
+/* ---------- salary certificates: review ---------- */
+.review { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 22px; align-items: start; }
+.doc-viewer { position: sticky; top: 84px; padding: 12px; display: grid; gap: 10px; max-height: calc(100vh - 100px); overflow: auto; }
+.doc-viewer header { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: var(--t-sm); color: var(--muted); }
+.doc-viewer iframe { width: 100%; height: 70vh; border: 0; border-radius: 10px; background: var(--surface-2); }
+.doc-image img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ocr-text summary { cursor: pointer; font-size: var(--t-sm); color: var(--green); font-weight: 600; }
+.ocr-text pre { white-space: pre-wrap; font-size: var(--t-xs); background: var(--surface-2); padding: 12px; border-radius: 10px; max-height: 280px; overflow: auto; margin-top: 8px; }
+.review-form { display: grid; gap: 16px; }
+.review-card { padding: 20px 22px; }
+.review-card h2 { font-size: var(--t-lg); margin-bottom: 4px; }
+.review-card > .hint { margin-bottom: 10px; }
+.review-row { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.review-row:last-child { border-bottom: 0; }
+.review-row label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: var(--t-sm); font-weight: 550; }
+.review-row label small { flex-basis: 100%; color: var(--muted); font-weight: 400; font-size: var(--t-xs); }
+.found-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--mint); flex: none; cursor: help; }
+.review-bar {
+    position: sticky; bottom: 12px; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 14px 18px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px);
+    border: 1px solid var(--line-strong); box-shadow: var(--shadow-panel);
+}
+.review-bar dl { display: flex; gap: 22px; flex-wrap: wrap; margin: 0; }
+.review-bar dt { font-size: var(--t-xs); color: var(--muted); }
+.review-bar dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; font-family: var(--font-display); }
+.review-bar dd.is-loading { opacity: .5; }
+
+/* ---------- salary certificates: report ---------- */
+.report { display: grid; gap: 26px; }
+.report-cover { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: end; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.report-brand { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: var(--t-sm); }
+.eyebrow { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--green); font-weight: 700; }
+.report-title h1 { font-size: var(--t-3xl); margin: 6px 0; }
+.report-meta { display: flex; gap: 8px 18px; flex-wrap: wrap; color: var(--muted); font-size: var(--t-sm); }
+.report-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.pdf-hint { grid-column: 1 / -1; text-align: right; }
+.report-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.report-kpis > div { display: grid; gap: 4px; padding: 16px 18px; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); }
+.report-kpis span { font-size: var(--t-sm); color: var(--muted); }
+.report-kpis strong { font-family: var(--font-display); font-size: var(--t-2xl); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.report-kpis small { font-size: var(--t-xs); color: var(--muted); }
+.report-kpis .is-cost { background: color-mix(in srgb, var(--red-soft) 60%, var(--surface)); }
+.report-kpis .is-good { background: linear-gradient(160deg, var(--mint), var(--surface) 75%); }
+.report-kpis .is-good strong { color: var(--green); }
+.report-section { padding: 22px; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); }
+.report-section > h2 { display: flex; align-items: center; gap: 12px; font-size: var(--t-xl); margin-bottom: 18px; }
+.sec-no { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--mint); color: var(--green); font-size: var(--t-sm); font-weight: 700; flex: none; }
+.computation td { padding-block: 9px; }
+.computation tr.sum td { font-weight: 700; border-top: 1px solid var(--line-strong); }
+.computation tr.total td { font-size: var(--t-lg); font-family: var(--font-display); color: var(--green); }
+.computation tr.total.cost td { color: var(--red); }
+.guide-h { font-size: var(--t-md); margin: 18px 0 6px; }
+.report .table td:first-child { white-space: normal; }
+.report-foot { color: var(--muted); font-size: var(--t-xs); border-top: 1px solid var(--line); padding-top: 14px; }
 .tips { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .tip {
     display: grid; align-content: start; gap: 8px; padding: 18px; border-radius: var(--r-lg); background: var(--surface);
@@ -664,6 +770,28 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
     .sec, .panel, tr { break-inside: avoid; }
     .print-only { display: block; }
     .sources a::after { content: " (" attr(href) ")"; word-break: break-all; }
+
+    /* The tax report as an A4 document. */
+    @page { size: A4; margin: 14mm 12mm; }
+    body.report-page { font-size: 11pt; }
+    .reveal { animation: none !important; }
+    .report { gap: 14px; }
+    .report-section { padding: 14px 0 0; border: 0; border-top: 1px solid #ddd; border-radius: 0; background: none; }
+    .report-section.print-break { break-before: page; border-top: 0; }
+    .report-kpis > div, .report-section .chart-card, .tip, .insight { break-inside: avoid; }
+    .report-kpis { grid-template-columns: repeat(4, 1fr); }
+    .report-section .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+    .report-section .split.print-stack { grid-template-columns: 1fr; }
+    .report .table { font-size: 9pt; }
+    .report .table td, .report .table th { padding: 5px 6px; }
+    .report-section .table-wrap { overflow: visible; }
+    .report-section .charts { grid-template-columns: 1fr 1fr; }
+    .report-section .chart-card { grid-column: auto !important; }
+    .chart-box { height: 210px !important; }
+    .chart-box.short { height: 180px !important; }
+    .tips { grid-template-columns: 1fr 1fr; }
+    .tip:hover { transform: none; box-shadow: none; }
+    .report-cover { grid-template-columns: 1fr; }
 }
 
 /* ---------- motion: small, CSS-only, off for reduced motion ---------- */
@@ -687,7 +815,7 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .settings-section header h2 { font-size: var(--t-lg); }
 .settings-section header p { color: var(--muted); font-size: var(--t-sm); margin-top: 4px; max-width: 60ch; }
 .settings-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 26px; background: var(--surface-2); border-top: 1px solid var(--line); }
-.settings-section .field-row { align-items: end; }
+.settings-section .field-row, .review-card .field-row { align-items: end; }
 .settings-section .field > .seg { justify-self: start; }
 .settings-rows { display: grid; }
 .settings-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }

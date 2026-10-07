@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Services\Ocr\ImagePreparer;
+use App\Services\Ocr\NullReader;
+use App\Services\Ocr\OcrReader;
+use App\Services\Ocr\OcrSpaceReader;
+use App\Services\SalaryCertificate\CertificateParser;
 use App\Services\Tax\TaxEngine;
 use App\Services\Tax\TaxReport;
 use App\Services\Tax\TaxTips;
@@ -21,6 +26,16 @@ class AppServiceProvider extends ServiceProvider
             $app->make(TaxEngine::class), $app->make(TaxReport::class), array_keys($app['config']->get('salary.perks')),
         ));
         $this->app->bind(TaxTips::class, fn ($app) => new TaxTips($app->make(TaxEngine::class), $app['config']->get('tips')));
+        // Salary certificates: OCR.space when a key is set, otherwise manual entry.
+        $this->app->bind(OcrReader::class, function ($app) {
+            $ocr = $app['config']->get('services.ocr_space');
+
+            return filled($ocr['key'])
+                ? new OcrSpaceReader($ocr['key'], $ocr['endpoint'], $ocr['engine'], $ocr['timeout'])
+                : new NullReader;
+        });
+        $this->app->bind(ImagePreparer::class, fn ($app) => new ImagePreparer($app['config']->get('services.ocr_space.max_bytes')));
+        $this->app->bind(CertificateParser::class, fn ($app) => new CertificateParser($app['config']->get('salary_certificate'), $app['config']->get('tax.years')));
         $this->app->singleton(WealthReconciler::class, fn ($app) => new WealthReconciler($app['config']->get('wealth')));
 
         // SQLite: write-ahead logging lets reads continue during writes; wait instead of failing when busy.

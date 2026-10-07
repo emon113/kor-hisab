@@ -43,6 +43,10 @@
                 <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds', 'filing-check', 'offers', 'tips')])>
                     <summary><x-icon name="tools" size="18" /> <span>{{ __('Tools') }}</span> <x-icon name="chevron" size="14" class="hide-sm" /></summary>
                     <div class="menu-panel">
+                        <a href="{{ route('certificates.index') }}" @class(['tool', 'active' => request()->routeIs('certificates.*')])>
+                            <x-icon name="scan" size="18" />
+                            <span><b>{{ __('Salary certificate report') }}</b><small>{{ __('Upload your certificate, get a full tax report') }}</small></span>
+                        </a>
                         <a href="{{ route('tips') }}" @class(['tool', 'active' => request()->routeIs('tips')])>
                             <x-icon name="sprout" size="18" />
                             <span><b>{{ __('Pay less tax, legally') }}</b><small>{{ __('Every choice the law gives you, in plain words') }}</small></span>
@@ -68,6 +72,9 @@
                 @auth
                     <a href="{{ route('calculations.index') }}" @class(['active' => request()->routeIs('calculations.index', 'calculations.compare')])>
                         <x-icon name="folder" size="18" /> <span>{{ __('Saved') }}</span>
+                    </a>
+                    <a href="{{ route('certificates.index') }}" @class(['active' => request()->routeIs('certificates.*')])>
+                        <x-icon name="scan" size="18" /> <span>{{ __('Salary report') }}</span>
                     </a>
                     <a href="{{ route('wealth.index') }}" @class(['active' => request()->routeIs('wealth.*')])>
                         <x-icon name="wealth" size="18" /> <span>{{ __('Wealth') }}</span>

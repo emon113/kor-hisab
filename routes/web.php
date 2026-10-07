@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalculationController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\FilingCheckController;
 use App\Http\Controllers\LangController;
 use App\Http\Controllers\OfferCompareController;
@@ -48,6 +49,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/calculations/{calculation}/return-guide', [ReturnGuideController::class, 'forCalculation'])->whereNumber('calculation')->name('calculations.guide');
 
     Route::post('/target-tax/ratios', [TargetTaxController::class, 'saveRatios'])->name('target.ratios');
+
+    Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::post('/certificates', [CertificateController::class, 'store'])->middleware('throttle:20,1')->name('certificates.store');
+    Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->whereNumber('certificate')->name('certificates.show');
+    Route::put('/certificates/{certificate}', [CertificateController::class, 'update'])->whereNumber('certificate')->name('certificates.update');
+    Route::delete('/certificates/{certificate}', [CertificateController::class, 'destroy'])->whereNumber('certificate')->name('certificates.destroy');
+    Route::get('/certificates/{certificate}/file', [CertificateController::class, 'file'])->whereNumber('certificate')->name('certificates.file');
+    Route::get('/certificates/{certificate}/report', [CertificateController::class, 'report'])->whereNumber('certificate')->name('certificates.report');
+    Route::post('/certificates/{certificate}/read', [CertificateController::class, 'reread'])->middleware('throttle:10,1')->whereNumber('certificate')->name('certificates.reread');
 
     Route::get('/wealth', [WealthController::class, 'index'])->name('wealth.index');
     Route::get('/wealth/{year}', [WealthController::class, 'edit'])->where('year', '\d{4}-\d{2}')->name('wealth.edit');

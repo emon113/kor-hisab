@@ -291,11 +291,22 @@
         if (window.__flash) KH.toast(window.__flash);
         // Print in the light theme whatever the screen uses, then switch back.
         let screenTheme = null;
+        // Charts are redrawn in print colours, without animation, at the printed size.
+        const reflowCharts = (printing) => {
+            applyChartDefaults();
+            if (printing && window.Chart) window.Chart.defaults.animation.duration = 0;
+            window.dispatchEvent(new CustomEvent('kh:theme'));
+            Object.values(window.Chart?.instances || {}).forEach((c) => c.resize());
+        };
         window.addEventListener('beforeprint', () => {
             screenTheme = document.documentElement.getAttribute('data-theme');
             document.documentElement.setAttribute('data-theme', 'light');
+            reflowCharts(true);
         });
-        window.addEventListener('afterprint', () => { if (screenTheme) document.documentElement.setAttribute('data-theme', screenTheme); });
+        window.addEventListener('afterprint', () => {
+            if (screenTheme) document.documentElement.setAttribute('data-theme', screenTheme);
+            reflowCharts(false);
+        });
         // Close the account menu when clicking elsewhere.
         document.addEventListener('click', (e) => {
             document.querySelectorAll('details.menu[open]').forEach((d) => { if (!d.contains(e.target)) d.removeAttribute('open'); });

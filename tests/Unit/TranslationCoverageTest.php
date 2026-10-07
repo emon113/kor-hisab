@@ -114,7 +114,7 @@ class TranslationCoverageTest extends TestCase
     {
         $tax = require $this->root.'/config/tax.php';
         $configs = [['years' => $tax['years'], 'instruments' => $tax['instruments'], 'filing' => $tax['filing_periods'], 'salary' => $tax['salary_components']]];
-        foreach (['return_form', 'wealth', 'filing_check', 'salary', 'tips'] as $name) {
+        foreach (['return_form', 'wealth', 'filing_check', 'salary', 'tips', 'salary_certificate'] as $name) {
             $path = $this->root."/config/{$name}.php";
             if (is_file($path)) {
                 $configs[] = require $path;

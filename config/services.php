@@ -28,6 +28,16 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Reads salary certificates (images and PDFs). Free plan: 1 MB per file, 3 PDF pages.
+    // Engine 2 is best for English certificates; engine 3 also reads other scripts but has a lower quota.
+    'ocr_space' => [
+        'key' => env('OCR_SPACE_API_KEY'),
+        'endpoint' => env('OCR_SPACE_ENDPOINT', 'https://api.ocr.space/parse/image'),
+        'engine' => (int) env('OCR_SPACE_ENGINE', 2),
+        'max_bytes' => (int) env('OCR_SPACE_MAX_BYTES', 1024 * 1024),
+        'timeout' => 60,
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

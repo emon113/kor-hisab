@@ -157,6 +157,9 @@ git merge-base --is-ancestor HEAD "origin/$BRANCH" \
 FROM=$(git rev-parse --short HEAD)
 NEW_COMMITS=$(git rev-list --count "HEAD..origin/$BRANCH")
 
+# Salary certificate photos are shrunk with GD before reading; without it, large photos cannot be read.
+php -r 'exit(extension_loaded("gd") ? 0 : 1);' || warn "PHP's GD extension is missing (apt install php8.3-gd): large certificate photos will not be read automatically."
+
 note "php     $(php -r 'echo PHP_VERSION;')"
 note "commit  $FROM  $(git log -1 --format=%s)"
 if ((NEW_COMMITS == 0)); then

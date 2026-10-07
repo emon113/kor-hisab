@@ -37,6 +37,11 @@ class User extends Authenticatable
         return $this->hasMany(WealthStatement::class);
     }
 
+    public function salaryCertificates(): HasMany
+    {
+        return $this->hasMany(SalaryCertificate::class);
+    }
+
     public function firstName(): string
     {
         return strtok($this->name, ' ') ?: $this->name;

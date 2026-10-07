@@ -92,6 +92,14 @@ Anyone can use the calculators without an account. With an account, you can save
 - The catalogue page lists them all. Signed-in users with a salary profile also get a "For you" section.
 - Words live in `config/tips.php`, rules in `app/Services/Tax/TaxTips.php`.
 
+### Salary certificate report (`/certificates`, signed in)
+- **Upload** a photo or PDF of the yearly salary certificate. Photos are shrunk in the browser first, and uploads show real progress.
+- **Read:** OCR.space reads the text (`OCR_SPACE_API_KEY`). `CertificateParser` turns it into figures: basic, allowances, bonuses, perks, employer and employee PF, TDS, the certificate's own total, employer, employee, TIN and the assessment year. It handles OCR's misread separators ("720.000", "60-000"), lakh grouping, Bangla digits and labels, and monthly/yearly columns. Label wordings are data in `config/salary_certificate.php`.
+- **Check:** the user reviews every figure beside the document. Read values are marked and show the line they came from. A live estimate and a match against the certificate total help catch misreads. Without an API key, or if reading fails, the same screen is used for manual entry.
+- **Report:** a full report with the salary breakdown, the tax computation, slabs, investments and rebate, predictions, legal ways to pay less, six charts, and where every figure goes on the return. **Download PDF** uses the browser's Save as PDF with an A4 print layout.
+- **Privacy:** files are stored on the private disk (`storage/app/private/certificates/{user}`), served only to their owner, and deleted with the record.
+- Code: `app/Services/Ocr` (swappable `OcrReader`), `app/Services/SalaryCertificate`, `app/Http/Controllers/CertificateController.php`.
+
 ### Accounts (optional)
 - Register, sign in and sign out. Passwords need 8 or more characters with letters and numbers. Sign-in is rate-limited.
 - **Saved calculations** (`/calculations`): a list with stats and a trend chart. You can open, rename or edit notes, delete, and **compare two side by side**.
@@ -214,6 +222,11 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | POST | `/calculations` | ✓ | Save (JSON) |
 | GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
 | POST | `/target-tax/ratios` | ✓ | Save default salary split |
+| GET / POST | `/certificates` | ✓ | Your certificates / upload one (JSON, throttle 20/min) |
+| GET / PUT / DELETE | `/certificates/{id}` | ✓ | Review figures / confirm them / delete (with the file) |
+| GET | `/certificates/{id}/file` | ✓ | The original file, owner only |
+| GET | `/certificates/{id}/report` | ✓ | The tax report (print to PDF) |
+| POST | `/certificates/{id}/read` | ✓ | Read the file again |
 | GET | `/wealth` | ✓ | Assets and liabilities, all years |
 | GET / PUT / DELETE | `/wealth/{year}` | ✓ | Edit / save (JSON) / delete one year's statement, e.g. `2026-27` |
 | GET | `/wealth/{year}/print` | ✓ | Print view in IT-10B order |
@@ -231,6 +244,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | `users` | Standard Laravel users plus `salary_ratios` and `preferences` (json, nullable; tax, salary and display settings) |
 | `calculations` | `user_id` (cascade delete), `title`, `notes`, `tax_year`, `category`, `gross_income`, `liability`, `payable`, `effective_rate`, `inputs` (json), `summary` (json). Indexed on (`user_id`, `updated_at`). |
 | `wealth_statements` | `user_id` (cascade delete), `tax_year` (unique per user), `opening_net_wealth` (only for a first statement), `receipts`, `expenses`, `liabilities`, `assets` (json, one amount per form line), `notes`. |
+| `salary_certificates` | `user_id` (cascade delete), file `original_name`, `path`, `mime`, `size`; `status` (read, unread, confirmed), `ocr_text`, `ocr_error`, `extracted` (what was read) and `data` (what the user confirmed, json), `confirmed_at`. |
 | `sessions`, `cache`, `cache_locks` | Database session, cache and rate-limiter storage |
 | `jobs`, `job_batches`, `failed_jobs` | From the skeleton. **The app dispatches no jobs and schedules no tasks**, so no queue worker or cron is needed. |
 
@@ -386,7 +400,7 @@ sudo apt-get install -y software-properties-common ca-certificates curl unzip gi
 
 ```bash
 sudo apt-get install -y php8.3-fpm php8.3-cli php8.3-sqlite3 php8.3-mbstring php8.3-xml \
-  php8.3-curl php8.3-zip php8.3-intl php8.3-bcmath php8.3-opcache
+  php8.3-curl php8.3-zip php8.3-intl php8.3-bcmath php8.3-opcache php8.3-gd
 ```
 
 Install Composer 2 if it is missing:
@@ -463,6 +477,8 @@ MAIL_MAILER=log
 SEED_USER_NAME="<name>"
 SEED_USER_EMAIL=<email>
 SEED_USER_PASSWORD=
+# Salary certificate reading (free key: https://ocr.space/ocrapi). Leave empty to type figures in by hand.
+OCR_SPACE_API_KEY=
 ```
 
 Generate the key **only if `APP_KEY` is empty**:
@@ -516,7 +532,7 @@ server {
     root /var/www/kor-hishab/public;
     index index.php;
     charset utf-8;
-    client_max_body_size 2m;
+    client_max_body_size 12m;   # salary certificate uploads (up to 10 MB)
 
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -599,6 +615,9 @@ opcache.max_accelerated_files=20000
 opcache.validate_timestamps=0
 expose_php=Off
 memory_limit=256M
+; Salary certificate uploads (the app accepts up to 10 MB)
+upload_max_filesize=12M
+post_max_size=14M
 ```
 
 `validate_timestamps=0` means PHP code changes only take effect after `sudo systemctl reload php8.3-fpm`. The update procedure below already does this.
