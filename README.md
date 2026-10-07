@@ -64,6 +64,11 @@ Anyone can use the calculators without an account. With an account, you can save
 - Lists common services that ask for proof of return submission (PSR), and those where a TIN is enough since the Finance Ordinance 2025. People not required to file are exempt from PSR.
 - Rules, sources and the date they were checked live in `config/filing_check.php`. The rules are evaluated in the browser; the salary at which tax starts comes from `TaxEngine`.
 
+### Job offer comparer (`/compare-offers`)
+- Two or three offers side by side, entered the way offer letters are written: monthly salary, basic share, festival bonuses (months of basic or of gross), other yearly cash and the employer's PF contribution.
+- Tax comes from the same `TaxEngine`. Employer PF counts as salary for tax (Schedule 1) but not as cash, so offers are compared on **monthly take-home** and on **total yearly value** (take-home plus PF).
+- Shows the best offer, the difference against the first offer ("a 20% raise on paper is 17.6% in your pocket"), the investment each needs for the full rebate, and a chart of where the money goes. Logic in `app/Services/Tax/OfferComparer.php`.
+
 ### Assets and liabilities statement (`/wealth`, signed in)
 - A year-by-year working copy of NBR's **IT-10B (2023)** statement of assets and liabilities and **IT-10BB (2023)** lifestyle expenses, with the form's serial numbers.
 - A new year starts from last year's assets and liabilities, and takes income and TDS from that year's saved calculation.
@@ -178,6 +183,8 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | GET | `/return-guide` | – | Return form guide (calculator inputs in the query string) |
 | GET | `/tds-planner` | – | Monthly TDS planner |
 | GET | `/must-i-file` | – | Return filing checker |
+| GET | `/compare-offers` | – | Job offer comparer |
+| POST | `/compare-offers/compute` | – | JSON comparison (throttle 240/min) |
 | POST | `/tds-planner/plan` | – | JSON plan (throttle 240/min) |
 | GET | `/calculations/{id}/return-guide` | ✓ | Return form guide for a saved calculation |
 | POST | `/calculations` | ✓ | Save (JSON) |

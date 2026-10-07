@@ -530,6 +530,8 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
     .calc-item { grid-template-columns: 24px 1fr auto; }
     .calc-item .calc-fig { display: none; }
     .wealth-item { grid-template-columns: 1fr auto; }
+    .offer-grid { grid-template-columns: 1fr; }
+    .offer-add { width: auto; padding: 14px; grid-auto-flow: column; }
     .split-even { grid-template-columns: 1fr; }
     .mobile-bar {
         display: flex; position: sticky; bottom: 0; z-index: 30; justify-content: space-between; align-items: center; gap: 12px;
@@ -574,6 +576,21 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .print-only { display: none; }
+.offer-settings { display: flex; flex-wrap: wrap; gap: 16px 22px; align-items: end; padding: 16px 20px; margin-bottom: 18px; }
+.offer-settings .field { margin: 0; min-width: 170px; }
+.offer-grid { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)) auto; gap: 16px; align-items: stretch; }
+.offer-card { padding: 18px; border: 1px solid var(--line); transition: border-color .2s var(--ease); }
+.offer-card.best { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), var(--shadow-panel); }
+.offer-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.offer-name { font-family: var(--font-display); font-weight: 700; font-size: var(--t-md); flex: 1; min-width: 0; }
+.offer-add {
+    display: grid; place-items: center; align-content: center; gap: 6px; width: 120px; border: 1.5px dashed var(--line-strong);
+    border-radius: var(--r-lg); background: none; color: var(--muted); cursor: pointer; font: inherit; font-size: var(--t-sm);
+}
+.offer-add:hover { color: var(--green); border-color: var(--green); }
+.offer-verdict { font-family: var(--font-display); font-size: var(--t-lg); font-weight: 650; margin-bottom: 16px; max-width: 70ch; }
+.offer-diff { display: block; font-size: var(--t-xs); }
+.table tr.row-strong td { font-weight: 700; }
 .questions { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 16px; counter-reset: q; }
 .questions li { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
 .questions p { font-weight: 550; }

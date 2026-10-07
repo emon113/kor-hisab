@@ -6,6 +6,7 @@ use App\Http\Controllers\CalculationController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\FilingCheckController;
 use App\Http\Controllers\LangController;
+use App\Http\Controllers\OfferCompareController;
 use App\Http\Controllers\ReturnGuideController;
 use App\Http\Controllers\TargetTaxController;
 use App\Http\Controllers\TdsPlannerController;
@@ -22,6 +23,8 @@ Route::post('/target-tax/solve', [TargetTaxController::class, 'solve'])->middlew
 Route::get('/return-guide', [ReturnGuideController::class, 'show'])->middleware('throttle:240,1')->name('return-guide');
 Route::get('/tds-planner', [TdsPlannerController::class, 'index'])->name('tds');
 Route::get('/must-i-file', [FilingCheckController::class, 'index'])->name('filing-check');
+Route::get('/compare-offers', [OfferCompareController::class, 'index'])->name('offers');
+Route::post('/compare-offers/compute', [OfferCompareController::class, 'compute'])->middleware('throttle:240,1')->name('offers.compute');
 Route::post('/tds-planner/plan', [TdsPlannerController::class, 'plan'])->middleware('throttle:240,1')->name('tds.plan');
 
 Route::middleware('guest')->group(function () {

@@ -40,9 +40,13 @@
                 <a href="{{ route('target') }}" @class(['active' => request()->routeIs('target')])>
                     <x-icon name="target" size="18" /> <span>{{ __('Target tax') }}</span>
                 </a>
-                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds', 'filing-check')])>
+                <details @class(['menu', 'nav-menu', 'active' => request()->routeIs('return-guide', 'calculations.guide', 'tds', 'filing-check', 'offers')])>
                     <summary><x-icon name="tools" size="18" /> <span>{{ __('Tools') }}</span> <x-icon name="chevron" size="14" class="hide-sm" /></summary>
                     <div class="menu-panel">
+                        <a href="{{ route('offers') }}" @class(['tool', 'active' => request()->routeIs('offers')])>
+                            <x-icon name="compare" size="18" />
+                            <span><b>{{ __('Compare job offers') }}</b><small>{{ __('Which offer leaves more in your pocket after tax') }}</small></span>
+                        </a>
                         <a href="{{ route('filing-check') }}" @class(['tool', 'active' => request()->routeIs('filing-check')])>
                             <x-icon name="help" size="18" />
                             <span><b>{{ __('Do I need to file?') }}</b><small>{{ __('Check the legal conditions in a minute') }}</small></span>
