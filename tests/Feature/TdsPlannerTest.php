@@ -25,13 +25,14 @@ class TdsPlannerTest extends TestCase
 
     public function test_plan_endpoint(): void
     {
-        $this->postJson('/tds-planner/plan', ['year' => '2027-28', 'category' => 'general', 'months' => $this->months()])
+        $this->postJson('/tds-planner/plan', ['year' => '2027-28', 'category' => 'general', 'months' => $this->months(), 'perks' => ['overtime' => 24000], 'investments' => ['dps' => 60000], 'strategy' => 'full_rebate'])
             ->assertOk()
-            ->assertJsonPath('gross', 1200000)
+            ->assertJsonPath('gross', 1224000)
+            ->assertJsonPath('input.strategy', 'full_rebate')
             ->assertJsonPath('deducted', 9000)
             ->assertJsonPath('open_months', 9)
             ->assertJsonPath('months.3.label', 'October 2026')
-            ->assertJsonStructure(['liability', 'remaining', 'status', 'hr_text', 'months' => [['key', 'salary', 'suggested', 'cumulative_needed']]]);
+            ->assertJsonStructure(['liability', 'remaining', 'status', 'hr_text', 'outcomes' => ['none', 'current', 'best', 'saving'], 'range', 'year_end', 'insights', 'months' => [['key', 'salary', 'suggested', 'cumulative_needed']]]);
     }
 
     public function test_plan_is_in_bangla(): void
@@ -51,5 +52,9 @@ class TdsPlannerTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('months.oct.salary');
         $this->postJson('/tds-planner/plan', ['year' => '2027-28', 'category' => 'general', 'months' => ['jul' => []] + ['xyz' => []]])
             ->assertStatus(422)->assertJsonValidationErrors('months');
+        $this->postJson('/tds-planner/plan', ['year' => '2027-28', 'category' => 'general', 'months' => $this->months(), 'perks' => ['yacht' => 1]])
+            ->assertStatus(422)->assertJsonValidationErrors('perks');
+        $this->postJson('/tds-planner/plan', ['year' => '2027-28', 'category' => 'general', 'months' => $this->months(), 'strategy' => 'evade'])
+            ->assertStatus(422)->assertJsonValidationErrors('strategy');
     }
 }

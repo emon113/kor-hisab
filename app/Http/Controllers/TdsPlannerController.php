@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TdsPlanRequest;
 use App\Services\Tax\TdsPlanner;
-use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxOptions;
 use App\Support\TaxProfile;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -37,17 +37,26 @@ class TdsPlannerController extends Controller
                 'done' => $done[$key],
             ];
         }
-        $input = ['year' => $year, 'investment' => 0, 'months' => $months] + $profile->taxInput();
-
-        $rules = config('tax');
+        $perks = array_fill_keys(array_keys(config('salary.perks')), 0);
+        $perks['employer_pf'] = ($pkg['employer_pf'] ?? 0) ?: ($profile->hasSalary() ? 0 : 72000);
+        $input = $profile->taxInput() + [
+            'year' => $year,
+            'months' => $months,
+            'perks' => $perks,
+            'investments' => ['dps' => 60000],
+            'strategy' => 'current',
+            'monthly_cap' => 0,
+        ];
 
         return view('tds.index', [
             'boot' => [
                 'input' => $input,
                 'plan' => $this->planner->plan($input),
                 'options' => [
-                    'years' => collect($rules['years'])->map(fn ($y, $k) => ['key' => $k, 'label' => Lang::label($y['label']), 'income_year' => Lang::label($y['income_year'])])->values(),
-                    'categories' => collect($rules['categories'])->map(fn ($l, $k) => ['key' => $k, 'label' => __($l)])->values(),
+                    'years' => TaxOptions::years(),
+                    'categories' => TaxOptions::categories(),
+                    'instruments' => TaxOptions::instruments(),
+                    'perks' => TaxOptions::perks(),
                 ],
                 'months' => TdsPlanner::MONTHS,
                 'routes' => ['plan' => route('tds.plan'), 'calculator' => route('home')],

@@ -86,6 +86,26 @@
         }
     };
 
+    /* ---------- motion ---------- */
+    const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /**
+     * Count a money figure from its last value to the new one (≈ 0.45 s, ease-out).
+     * Use from Alpine: x-effect="KH.tween($el, plan.next_monthly)".
+     */
+    KH.tween = (el, to, format = KH.bdt) => {
+        to = Number(to) || 0;
+        const from = Number(el.dataset.v ?? to);
+        el.dataset.v = to;
+        if (reduceMotion() || from === to || !el.isConnected) { el.textContent = format(to); return; }
+        const start = performance.now();
+        const step = (now) => {
+            const t = Math.min(1, (now - start) / 450);
+            el.textContent = format(from + (to - from) * (1 - Math.pow(1 - t, 3)));
+            if (t < 1 && Number(el.dataset.v) === to) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    };
+
     /* ---------- requests ---------- */
     KH.csrf = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     KH.request = async (url, method = 'GET', body = undefined, { signal } = {}) => {

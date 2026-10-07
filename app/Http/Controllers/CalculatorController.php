@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CalculationInputRequest;
 use App\Models\Calculation;
 use App\Services\Tax\TaxReport;
-use App\Support\Lang;
 use App\Support\Money;
+use App\Support\TaxOptions;
 use App\Support\TaxProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,8 +51,6 @@ class CalculatorController extends Controller
             'filing' => 'standard',
         ];
 
-        $rules = config('tax');
-
         return view('calculator.index', [
             'calculation' => $calculation,
             'boot' => [
@@ -66,12 +64,10 @@ class CalculatorController extends Controller
                     'updated' => $calculation->updated_at?->diffForHumans(),
                 ] : null,
                 'options' => [
-                    'years' => collect($rules['years'])->map(fn ($y, $k) => [
-                        'key' => $k, 'label' => Lang::label($y['label']), 'income_year' => Lang::label($y['income_year']), 'projected' => (bool) $y['projected'],
-                    ])->values(),
-                    'categories' => collect($rules['categories'])->map(fn ($label, $k) => ['key' => $k, 'label' => __($label)])->values(),
-                    'instruments' => collect($rules['instruments'])->map(fn ($i, $k) => ['key' => $k, 'label' => __($i['label']), 'hint' => __($i['hint']), 'cap' => $i['cap']])->values(),
-                    'filing' => collect($rules['filing_periods'])->map(fn ($f, $k) => ['key' => $k, 'label' => Lang::label($f['label']), 'hint' => Lang::label($f['hint'])])->values(),
+                    'years' => TaxOptions::years(),
+                    'categories' => TaxOptions::categories(),
+                    'instruments' => TaxOptions::instruments(),
+                    'filing' => TaxOptions::filing(),
                 ],
                 'routes' => [
                     'calculate' => route('calculate'),

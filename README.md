@@ -26,7 +26,7 @@ Anyone can use the calculators without an account. With an account, you can save
 ## Features
 
 ### Tax calculator (`/`)
-- Inputs: assessment year, taxpayer category, gross annual salary, rebate-eligible investments (DPS, savings certificates, mutual funds, listed shares), TDS already deducted, filing period, new-taxpayer flag, and the number of disabled children or dependents.
+- Inputs: assessment year, taxpayer category, gross annual salary, rebate-eligible investments (DPS, savings certificates, mutual funds, listed shares, plus provident fund, life insurance, Universal Pension and zakat or approved donations), TDS already deducted, filing period, new-taxpayer flag, and the number of disabled children or dependents.
 - Output: tax-free salary (the ⅓ exemption), taxable income, a slab-by-slab breakdown, gross tax, investment rebate, minimum-tax top-up, early or late filing adjustment, final liability, amount still to pay or refund due, effective and marginal rates, and monthly take-home pay.
 - **Rebate optimiser:** shows how much eligible investment unlocks the full rebate, how much more to invest, an example plan that fills capped instruments first, and any investment that earns no rebate.
 - **Plain-language predictions:** headroom before the next slab, the filing deadline and its saving, TDS status, how much of a ৳10,000 raise you keep, bonus tax, the effect of a 10% raise, and the effect of future roadmap years.
@@ -54,10 +54,11 @@ Anyone can use the calculators without an account. With an account, you can save
 - Line mapping lives in `config/return_form.php`; `app/Services/Tax/ReturnGuide.php` only reads figures from the tax report.
 
 ### Monthly TDS planner (`/tds-planner`)
-- Twelve months (July to June) of salary and bonus. Tick the months already paid and enter the TDS actually deducted.
-- The year's tax comes from the same `TaxEngine` on the projected annual salary. What is still due is spread evenly over the remaining months that pay a salary, so the year ends with nothing to pay and no refund to chase.
-- Shows whether deductions are on track, behind or ahead of the tax due on income earned so far, a cumulative chart, and a ready-to-send message for HR.
-- Defaults to the income year that contains today, with past months ticked. Inputs are kept as a draft in the browser. Logic in `app/Services/Tax/TdsPlanner.php`.
+- Twelve months (July to June) of salary and bonus, **taxable perks** for the year (overtime, housing, transport, employer PF and others, as Schedule 1(b) lists them; `config/salary.php`) and the **investments** planned. Tick the months already paid and enter the TDS actually deducted.
+- **Three outcomes** from the same `TaxEngine`: tax without any investment, tax with the plan, and the **lowest legal tax** with the full investment rebate. Also the monthly TDS range between those.
+- **Deduction strategy:** cover the tax as planned, deduct for the lowest tax (investments declared to HR), or cap the monthly TDS and pay the rest with the return. Section 86 makes employers deduct on the estimated tax, and the page says so.
+- **Automatic advice** with one-click actions: what to invest to reach the lowest tax, employer PF that also counts as an investment, the tax added by bonuses and perks, the early-filing saving, slab warnings and more. Plus a pace chart and a ready-to-send HR message.
+- Investment, rebate and prediction logic is reused from `TaxReport`; the planner (`app/Services/Tax/TdsPlanner.php`) adds the monthly spread and strategies.
 
 ### "Do I need to file a return?" (`/must-i-file`)
 - A short questionnaire on the section 166 conditions of the Income Tax Act 2023: income above the tax-free limit (computed per category from `config/tax.php`), assessed in the last three years, company employee or shareholder director, government employee, executive post, partner, exempt or reduced-rate income. One "yes" makes filing compulsory, and the page says which rule applies.

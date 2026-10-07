@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\Tax\TaxReport;
+use App\Services\Tax\TdsPlanner;
 use App\Support\Money;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -100,6 +101,30 @@ class LocaleTest extends TestCase
                     $this->assertMatchesRegularExpression(self::BANGLA, $row['label']);
                 }
             }
+        }
+    }
+
+    public function test_planner_advice_is_translated(): void
+    {
+        App::setLocale('bn');
+        Money::useDigits('bn');
+        $months = [];
+        foreach (TdsPlanner::MONTHS as $i => $key) {
+            $months[$key] = ['salary' => 150000, 'bonus' => $i === 8 ? 90000 : 0, 'tds' => 0, 'done' => false];
+        }
+
+        foreach (['current', 'full_rebate', 'cap'] as $strategy) {
+            $plan = app(TdsPlanner::class)->plan([
+                'year' => '2027-28', 'category' => 'general', 'months' => $months, 'strategy' => $strategy, 'monthly_cap' => 2000,
+                'perks' => ['employer_pf' => 72000], 'investments' => ['dps' => 10000],
+            ], new DateTimeImmutable('2026-10-08'));
+
+            $this->assertNotEmpty($plan['insights']);
+            foreach ($plan['insights'] as $p) {
+                $this->assertMatchesRegularExpression(self::BANGLA, $p['title'], "Untranslated title: {$p['title']}");
+                $this->assertMatchesRegularExpression(self::BANGLA, $p['text'], "Untranslated text: {$p['text']}");
+            }
+            $this->assertMatchesRegularExpression(self::BANGLA, $plan['hr_text']);
         }
     }
 

@@ -85,12 +85,18 @@ return [
     // Added to the threshold for each disabled child or dependent.
     'extra_per_disabled_child' => 50000,
 
-    // Rebate-eligible investments. cap = maximum amount counted per year (null = no limit).
+    // Rebate-eligible investments (Income Tax Act 2023, Sixth Schedule Part 3).
+    // cap = maximum amount counted per year (null = no fixed limit). common = shown first.
+    // Order matters: the rebate optimiser fills capped instruments first, in this order.
     'instruments' => [
-        'dps' => ['label' => 'DPS', 'cap' => 120000, 'hint' => 'Monthly deposit pension scheme'],
-        'savings_certificate' => ['label' => 'Savings certificate', 'cap' => 500000, 'hint' => 'Sanchaypatra or government securities'],
-        'mutual_fund' => ['label' => 'Mutual fund', 'cap' => 500000, 'hint' => 'Unit funds and trusts'],
-        'shares' => ['label' => 'Listed shares', 'cap' => null, 'hint' => 'New investment in the share market'],
+        'dps' => ['label' => 'DPS', 'cap' => 120000, 'hint' => 'Monthly deposit pension scheme', 'common' => true],
+        'savings_certificate' => ['label' => 'Savings certificate', 'cap' => 500000, 'hint' => 'Sanchaypatra or government securities', 'common' => true],
+        'mutual_fund' => ['label' => 'Mutual fund', 'cap' => 500000, 'hint' => 'Unit funds and trusts', 'common' => true],
+        'shares' => ['label' => 'Listed shares', 'cap' => null, 'hint' => 'New investment in the share market', 'common' => true],
+        'provident_fund' => ['label' => 'Provident fund', 'cap' => null, 'hint' => 'Your and your employer’s contributions to a recognised fund', 'common' => false],
+        'life_insurance' => ['label' => 'Life insurance premium', 'cap' => null, 'hint' => 'For you, your spouse or minor children; premiums up to 10% of the sum assured count', 'common' => false],
+        'pension' => ['label' => 'Universal Pension Scheme', 'cap' => null, 'hint' => 'Contributions to the government’s Sarbojanin Pension', 'common' => false],
+        'zakat_donation' => ['label' => 'Zakat and approved donations', 'cap' => null, 'hint' => 'Zakat to the Zakat Fund, or donations to approved hospitals and institutions', 'common' => false],
     ],
 
     // Return-filing incentive / additional tax (Finance Act 2026), counted from the end of the income year.

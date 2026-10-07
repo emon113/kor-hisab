@@ -1,5 +1,7 @@
-/* Monthly TDS planner: twelve months in, a deduction plan out. */
+/* Monthly TDS planner: a year of pay, perks and investments in; the lowest legal tax and a deduction plan out. */
 document.addEventListener('alpine:init', () => {
+    const DRAFT = 'kh:tds:v2';   // v1 drafts had a single investment figure and no perks
+
     window.Alpine.data('tdsPlanner', (boot) => ({
         options: boot.options,
         routes: boot.routes,
@@ -14,7 +16,8 @@ document.addEventListener('alpine:init', () => {
         init() {
             const draft = this.loadDraft();
             if (draft) {
-                this.form = draft;
+                // Keep any new fields from the server defaults that an older draft lacks.
+                this.form = { ...this.form, ...draft, perks: { ...this.form.perks, ...draft.perks }, investments: { ...draft.investments } };
                 this.queue(0);
             }
             this.quickSalary = this.form.months.oct?.salary || 0;
@@ -27,18 +30,29 @@ document.addEventListener('alpine:init', () => {
         money(el, get, set) { KH.bindMoney(el, get, set); },
         get yearInfo() { return this.options.years.find((y) => y.key === this.form.year) || {}; },
 
-        /* Drafts live in this browser only. */
         loadDraft() {
             try {
-                const d = JSON.parse(localStorage.getItem('kh:tds') || 'null');
-                return d && d.months && Object.keys(d.months).length === 12 ? d : null;
+                const d = JSON.parse(localStorage.getItem(DRAFT) || 'null');
+                return d && d.months && Object.keys(d.months).length === 12 && d.perks ? d : null;
             } catch (e) { return null; }
         },
-        saveDraft() { try { localStorage.setItem('kh:tds', JSON.stringify(this.form)); } catch (e) { /* private mode */ } },
+        saveDraft() { try { localStorage.setItem(DRAFT, JSON.stringify(this.form)); } catch (e) { /* private mode */ } },
 
         fillSalary() {
             Object.values(this.form.months).forEach((m) => { m.salary = this.quickSalary; });
             KH.toast(KH.t('Salary set for all twelve months.'));
+        },
+        /* One-click actions offered by the advice cards. */
+        act(action) {
+            if (!action) return;
+            if (action.type === 'apply_plan') {
+                action.plan.forEach((p) => { this.form.investments[p.key] = Number(this.form.investments[p.key] || 0) + p.add; });
+                this.form.strategy = 'full_rebate';
+                KH.toast(KH.t('Added to your investment plan.'));
+            } else if (action.type === 'add_investment') {
+                this.form.investments[action.key] = Number(this.form.investments[action.key] || 0) + action.amount;
+                KH.toast(KH.t('Added to your investment plan.'));
+            }
         },
         async copy() {
             try {
@@ -49,6 +63,17 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        get verdictSub() {
+            const p = this.plan;
+            const months = KH.num(p.open_months);
+            if (p.year_end > 0.5 && this.form.strategy === 'full_rebate') {
+                return KH.t('For the :count months left. That covers the lowest tax; if the investments do not happen, <strong>:amount</strong> more is due with the return.', { count: months, amount: KH.bdt(p.year_end) });
+            }
+            if (p.year_end > 0.5) {
+                return KH.t('For the :count months left. <strong>:amount</strong> stays to pay with your return.', { count: months, amount: KH.bdt(p.year_end) });
+            }
+            return KH.t('For the :count months left that pay a salary.', { count: months });
+        },
         get statusTone() {
             return { on_track: 'good', ahead: 'info', behind: 'cost', refund: 'good' }[this.plan.status];
         },
@@ -58,7 +83,7 @@ document.addEventListener('alpine:init', () => {
                 on_track: KH.t('On track'),
                 ahead: KH.t('Ahead by :amount', { amount: KH.bdt(p.deducted - p.needed_by_now) }),
                 behind: KH.t('Behind by :amount', { amount: KH.bdt(p.needed_by_now - p.deducted) }),
-                refund: KH.t(':amount over-deducted', { amount: KH.bdt(-p.remaining) }),
+                refund: KH.t(':amount over-deducted', { amount: KH.bdt(p.deducted - p.liability) }),
             }[p.status];
         },
         get statusText() {

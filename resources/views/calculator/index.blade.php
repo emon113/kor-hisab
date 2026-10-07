@@ -60,7 +60,7 @@
             <div class="slip-group">
                 <h2>{{ __('Investments this year') }}</h2>
                 <p>{{ __('Each counts up to its limit. The rebate is 10% of the total, capped at 3% of taxable income.') }}</p>
-                <template x-for="inst in options.instruments" :key="inst.key">
+                <template x-for="inst in options.instruments.filter((i) => i.common)" :key="inst.key">
                     <div class="inv-row">
                         <label class="label" :for="'inv-' + inst.key">
                             <span x-text="inst.label"></span>
@@ -73,6 +73,19 @@
                         <div class="inv-meter" :class="{ over: meter(inst).over }" x-show="inst.cap"><i :style="'width:' + meter(inst).width + '%'"></i></div>
                     </div>
                 </template>
+                <details class="more-inv" :open="options.instruments.some((i) => !i.common && Number(form.investments[i.key]))">
+                    <summary>{{ __('Provident fund, insurance, pension, zakat') }}</summary>
+                    <template x-for="inst in options.instruments.filter((i) => !i.common)" :key="inst.key">
+                        <div class="inv-row">
+                            <label class="label" :for="'inv-' + inst.key"><span x-text="inst.label"></span></label>
+                            <div class="money">
+                                <span>৳</span>
+                                <input class="input" :id="'inv-' + inst.key" inputmode="numeric" autocomplete="off" :placeholder="KH.num(0)" x-init="money($el, 'inv:' + inst.key)">
+                            </div>
+                            <p class="hint" x-text="inst.hint"></p>
+                        </div>
+                    </template>
+                </details>
             </div>
 
             <div class="slip-group">

@@ -22,7 +22,12 @@ class TdsPlanRequest extends FormRequest
             'category' => ['required', Rule::in(array_keys(config('tax.categories')))],
             'new_taxpayer' => ['nullable', 'boolean'],
             'disabled_children' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'investment' => $money,
+            'investments' => ['nullable', 'array:'.implode(',', array_keys(config('tax.instruments')))],
+            'investments.*' => $money,
+            'perks' => ['nullable', 'array:'.implode(',', array_keys(config('salary.perks')))],
+            'perks.*' => $money,
+            'strategy' => ['nullable', Rule::in(TdsPlanner::STRATEGIES)],
+            'monthly_cap' => $money,
             'months' => ['required', 'array:'.implode(',', TdsPlanner::MONTHS)],
             'grouping' => ['nullable', Rule::in(['intl', 'lakh'])],
         ];
@@ -39,6 +44,6 @@ class TdsPlanRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['investment' => __('eligible investment')];
+        return ['monthly_cap' => __('monthly TDS limit')];
     }
 }
