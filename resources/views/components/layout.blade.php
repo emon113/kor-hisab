@@ -53,6 +53,9 @@
                     <a href="{{ route('calculations.index') }}" @class(['active' => request()->routeIs('calculations.index', 'calculations.compare')])>
                         <x-icon name="folder" size="18" /> <span>{{ __('Saved') }}</span>
                     </a>
+                    <a href="{{ route('wealth.index') }}" @class(['active' => request()->routeIs('wealth.*')])>
+                        <x-icon name="wealth" size="18" /> <span>{{ __('Wealth') }}</span>
+                    </a>
                 @endauth
             </nav>
 

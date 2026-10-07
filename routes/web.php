@@ -7,6 +7,7 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\LangController;
 use App\Http\Controllers\ReturnGuideController;
 use App\Http\Controllers\TargetTaxController;
+use App\Http\Controllers\WealthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/lang/{locale}.js', [LangController::class, 'script'])->where('locale', 'bn')->name('lang.script');
@@ -37,6 +38,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/calculations/{calculation}/return-guide', [ReturnGuideController::class, 'forCalculation'])->whereNumber('calculation')->name('calculations.guide');
 
     Route::post('/target-tax/ratios', [TargetTaxController::class, 'saveRatios'])->name('target.ratios');
+
+    Route::get('/wealth', [WealthController::class, 'index'])->name('wealth.index');
+    Route::get('/wealth/{year}', [WealthController::class, 'edit'])->where('year', '\d{4}-\d{2}')->name('wealth.edit');
+    Route::put('/wealth/{year}', [WealthController::class, 'update'])->where('year', '\d{4}-\d{2}')->name('wealth.update');
+    Route::delete('/wealth/{year}', [WealthController::class, 'destroy'])->where('year', '\d{4}-\d{2}')->name('wealth.destroy');
+    Route::get('/wealth/{year}/print', [WealthController::class, 'print'])->where('year', '\d{4}-\d{2}')->name('wealth.print');
 
     Route::get('/account', [AccountController::class, 'edit'])->name('account');
     Route::put('/account', [AccountController::class, 'update'])->name('account.update');

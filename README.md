@@ -53,6 +53,12 @@ Anyone can use the calculators without an account. With an account, you can save
 - Also lists the e-return portal steps and the documents to keep ready, with sources and the date they were checked. Prints cleanly (light theme, no navigation).
 - Line mapping lives in `config/return_form.php`; `app/Services/Tax/ReturnGuide.php` only reads figures from the tax report.
 
+### Assets and liabilities statement (`/wealth`, signed in)
+- A year-by-year working copy of NBR's **IT-10B (2023)** statement of assets and liabilities and **IT-10BB (2023)** lifestyle expenses, with the form's serial numbers.
+- A new year starts from last year's assets and liabilities, and takes income and TDS from that year's saved calculation.
+- **The check:** the form derives this year's net wealth from last year's plus sources of fund minus expenses, and it must equal assets minus liabilities. The page shows any gap live (more wealth than income explains, or less than it should be), the kind of mismatch that prompts NBR questions. Small gaps (the larger of ৳10,000 and 1% of sources) count as rounding.
+- Print view in IT-10B order. Logic in `app/Services/Wealth/WealthReconciler.php`, lines in `config/wealth.php`.
+
 ### Accounts (optional)
 - Register, sign in and sign out. Passwords need 8 or more characters with letters and numbers. Sign-in is rate-limited.
 - **Saved calculations** (`/calculations`): a list with stats and a trend chart. You can open, rename or edit notes, delete, and **compare two side by side**.
@@ -163,6 +169,9 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 | POST | `/calculations` | ✓ | Save (JSON) |
 | GET / PUT / DELETE | `/calculations/{id}` | ✓ | Open / update / delete |
 | POST | `/target-tax/ratios` | ✓ | Save default salary split |
+| GET | `/wealth` | ✓ | Assets and liabilities, all years |
+| GET / PUT / DELETE | `/wealth/{year}` | ✓ | Edit / save (JSON) / delete one year's statement, e.g. `2026-27` |
+| GET | `/wealth/{year}/print` | ✓ | Print view in IT-10B order |
 | GET / PUT | `/account`, `/account/password` | ✓ | Profile / password |
 | GET | `/lang/bn.js` | – | Bangla strings for browser-side text (cached) |
 | GET | `/up` | – | Health check (HTTP 200 when the app boots) |
@@ -175,6 +184,7 @@ tests/Unit/TaxEngineTest.php, tests/Feature/{AuthTest,CalculationTest}.php
 |---|---|
 | `users` | Standard Laravel users plus `salary_ratios` (json, nullable) |
 | `calculations` | `user_id` (cascade delete), `title`, `notes`, `tax_year`, `category`, `gross_income`, `liability`, `payable`, `effective_rate`, `inputs` (json), `summary` (json). Indexed on (`user_id`, `updated_at`). |
+| `wealth_statements` | `user_id` (cascade delete), `tax_year` (unique per user), `opening_net_wealth` (only for a first statement), `receipts`, `expenses`, `liabilities`, `assets` (json, one amount per form line), `notes`. |
 | `sessions`, `cache`, `cache_locks` | Database session, cache and rate-limiter storage |
 | `jobs`, `job_batches`, `failed_jobs` | From the skeleton. **The app dispatches no jobs and schedules no tasks**, so no queue worker or cron is needed. |
 

@@ -31,6 +31,11 @@ class User extends Authenticatable
         return $this->hasMany(Calculation::class);
     }
 
+    public function wealthStatements(): HasMany
+    {
+        return $this->hasMany(WealthStatement::class);
+    }
+
     public function firstName(): string
     {
         return strtok($this->name, ' ') ?: $this->name;

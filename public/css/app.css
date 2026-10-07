@@ -529,6 +529,7 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
     .stats div:nth-child(n+3) { border-top: 1px solid var(--line); }
     .calc-item { grid-template-columns: 24px 1fr auto; }
     .calc-item .calc-fig { display: none; }
+    .wealth-item { grid-template-columns: 1fr auto; }
     .split-even { grid-template-columns: 1fr; }
     .mobile-bar {
         display: flex; position: sticky; bottom: 0; z-index: 30; justify-content: space-between; align-items: center; gap: 12px;
@@ -573,6 +574,17 @@ dialog.sheet::backdrop { background: rgba(13, 22, 17, .45); backdrop-filter: blu
 .result-links { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 28px; }
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .print-only { display: none; }
+.wealth-item { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: var(--t-xs); font-weight: 600; background: var(--surface-2); margin-top: 4px; }
+.pill.tone-good { background: var(--mint); }
+.pill.tone-cost { background: var(--red-soft); }
+.pill.tone-watch { background: var(--turmeric-soft); color: var(--ink); }
+.wealth-figures { display: grid; gap: 0; margin: 4px 0 0; }
+.wealth-figures div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+.wealth-figures dt { color: var(--muted); }
+.wealth-figures dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.wealth-figures .strong dt { color: var(--ink); font-weight: 650; }
+.wealth-figures .strong dd { font-family: var(--font-display); font-size: var(--t-lg); color: var(--green); }
 
 /* ---------- print (return guide, wealth statement) ---------- */
 @media print {

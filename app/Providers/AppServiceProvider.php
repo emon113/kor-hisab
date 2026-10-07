@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Tax\TaxEngine;
+use App\Services\Wealth\WealthReconciler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -13,6 +14,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // The engine is stateless; TaxReport and TargetTaxSolver are autowired with it.
         $this->app->singleton(TaxEngine::class, fn ($app) => new TaxEngine($app['config']->get('tax')));
+        $this->app->singleton(WealthReconciler::class, fn ($app) => new WealthReconciler($app['config']->get('wealth')));
 
         // SQLite: write-ahead logging lets reads continue during writes; wait instead of failing when busy.
         $config = $this->app['config'];
