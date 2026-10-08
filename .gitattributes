@@ -1,5 +1,8 @@
 * text=auto eol=lf
 
+# Captured OCR output: keep the exact bytes (it has Windows line endings).
+tests/Fixtures/** -text
+
 *.blade.php diff=html
 *.css diff=css
 *.html diff=html
